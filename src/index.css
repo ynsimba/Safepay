@@ -95,16 +95,17 @@ body {
 .sp-brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 1.5rem 1.35rem 1.1rem;
+  justify-content: flex-start;
+  padding: 1.15rem 1.7rem 0.9rem;
 }
 
 .sp-brand-logo {
-  width: 100%;
-  height: auto;
-  max-height: 120px;
+  display: block;
+  height: 48px;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
-  flex-shrink: 0;
+  object-position: left center;
 }
 
 .sp-nav {
@@ -708,10 +709,12 @@ body {
 }
 
 .sp-splash-logo {
-  width: min(280px, 62vw);
-  height: auto;
-  max-height: 140px;
+  display: block;
+  height: 72px;
+  width: auto;
+  max-width: min(180px, 48vw);
   object-fit: contain;
+  object-position: center;
   animation: sp-splash-in 0.7s ease both;
 }
 
@@ -786,9 +789,11 @@ body {
 
 .sp-login-logo {
   display: block;
-  width: min(220px, 70%);
-  max-height: 88px;
+  height: 48px;
+  width: auto;
+  max-width: min(148px, 55%);
   object-fit: contain;
+  object-position: center;
   margin: 0 auto 1.25rem;
 }
 
