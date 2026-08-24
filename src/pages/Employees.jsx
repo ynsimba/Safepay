@@ -4,15 +4,16 @@
 import { useMemo, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useData } from '../context/DataContext.jsx';
-import { formatCurrency, applySalaryChange } from '../utils/payroll';
+import { formatCurrency, applySalaryChange, formatPeriod, availableYears } from '../utils/payroll';
 import { nextSort, sortRows } from '../utils/tableSort.js';
 import { PerceptionBadge } from '../components/Badges.jsx';
 import MonthSelect from '../components/MonthSelect.jsx';
+import YearSelect from '../components/YearSelect.jsx';
 import SortTh from '../components/SortTh.jsx';
 import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
 import { api } from '../api';
 
-const EMPTY_FORM = { nom: '', prenom: '', telephone: '', perception: 'VB', salaireInitial: '', compteBancaire: '', salaireFromMois: '' };
+const EMPTY_FORM = { nom: '', prenom: '', telephone: '', perception: 'VB', salaireInitial: '', compteBancaire: '', salaireFromMois: '', salaireFromAnnee: '' };
 
 const SORT_COLUMNS = [
   { key: 'nom', label: 'Nom' },
@@ -44,8 +45,9 @@ function employeeSortValue(emp, key) {
 
 /** Page Employés : liste, recherche, formulaire modal. */
 export default function Employees() {
-  const { employees, addEmployee, updateEmployee, deleteEmployee, settings } = useData();
+  const { employees, addEmployee, updateEmployee, deleteEmployee, settings, currentYear, archive } = useData();
   const perceptionOptions = settings.perceptions?.length ? settings.perceptions : ['VB', 'CASH'];
+  const years = useMemo(() => availableYears(archive, currentYear), [archive, currentYear]);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -75,7 +77,7 @@ export default function Employees() {
   function openAdd() {
     setEditingId(null);
     setOriginalSalaire(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, salaireFromAnnee: currentYear });
     setErrors({});
     setShowModal(true);
   }
@@ -91,6 +93,7 @@ export default function Employees() {
       salaireInitial: emp.salaireInitial,
       compteBancaire: '',
       salaireFromMois: '',
+      salaireFromAnnee: currentYear,
     });
     setErrors({});
     setShowModal(true);
@@ -127,7 +130,7 @@ export default function Employees() {
     const persist = editingId
       ? (salaryChanged
           // Changement de salaire : on historise l'ancien montant jusqu'au mois d'effet.
-          ? updateEmployee(editingId, { ...payload, ...applySalaryChange(editingEmployee, payload.salaireInitial, form.salaireFromMois) })
+          ? updateEmployee(editingId, { ...payload, ...applySalaryChange(editingEmployee, payload.salaireInitial, form.salaireFromMois, form.salaireFromAnnee || currentYear) })
           : updateEmployee(editingId, payload))
       : addEmployee(payload);
     Promise.resolve(persist).then(() => setShowModal(false)).catch(() => {});
@@ -169,7 +172,10 @@ export default function Employees() {
                     {formatCurrency(emp.salaireInitial)}
                     {emp.salaireHistory?.length > 1 && (
                       <div className="text-muted small">
-                        depuis {emp.salaireHistory[emp.salaireHistory.length - 1].fromMois}
+                        depuis {formatPeriod(
+                          emp.salaireHistory[emp.salaireHistory.length - 1].fromMois,
+                          emp.salaireHistory[emp.salaireHistory.length - 1].fromAnnee || currentYear
+                        )}
                       </div>
                     )}
                   </td>
@@ -231,16 +237,24 @@ export default function Employees() {
             {salaryChanged && (
               <div className="col-12">
                 <label className="form-label small fw-semibold">Prend effet à partir de <span className="text-danger">*</span></label>
-                <MonthSelect
-                  value={form.salaireFromMois}
-                  onChange={(m) => setForm({ ...form, salaireFromMois: m })}
-                  className={errors.salaireFromMois ? 'is-invalid' : ''}
-                  placeholder="Choisir le mois d'effet"
-                />
+                <div className="d-flex align-items-center gap-2">
+                  <YearSelect
+                    value={form.salaireFromAnnee || currentYear}
+                    onChange={(y) => setForm({ ...form, salaireFromAnnee: y })}
+                    years={years}
+                    className="w-auto"
+                  />
+                  <MonthSelect
+                    value={form.salaireFromMois}
+                    onChange={(m) => setForm({ ...form, salaireFromMois: m })}
+                    className={errors.salaireFromMois ? 'is-invalid' : ''}
+                    placeholder="Choisir le mois d'effet"
+                  />
+                </div>
                 {errors.salaireFromMois && <div className="invalid-feedback d-block">{errors.salaireFromMois}</div>}
                 {form.salaireFromMois && (
                   <div className="form-text">
-                    Le nouveau salaire ({formatCurrency(Number(form.salaireInitial))}) s&apos;applique de {form.salaireFromMois} à décembre.
+                    Le nouveau salaire ({formatCurrency(Number(form.salaireInitial))}) s&apos;applique à partir de {formatPeriod(form.salaireFromMois, form.salaireFromAnnee || currentYear)}.
                     {form.salaireFromMois !== 'Janvier' && ' Les mois antérieurs conservent le salaire alors en vigueur.'}
                   </div>
                 )}
@@ -249,7 +263,7 @@ export default function Employees() {
             {editingEmployee?.salaireHistory?.length > 1 && !salaryChanged && (
               <div className="col-12">
                 <div className="form-text mb-0">
-                  Historique : {editingEmployee.salaireHistory.map((h) => `${h.fromMois} → ${formatCurrency(h.salaire)}`).join(' · ')}
+                  Historique : {editingEmployee.salaireHistory.map((h) => `${formatPeriod(h.fromMois, h.fromAnnee || currentYear)} → ${formatCurrency(h.salaire)}`).join(' · ')}
                 </div>
               </div>
             )}

@@ -53,7 +53,7 @@ class Employee extends Model
 
     public function salaryHistory(): HasMany
     {
-        return $this->hasMany(SalaryHistory::class, 'employee_id')->orderBy('id');
+        return $this->hasMany(SalaryHistory::class, 'employee_id')->orderBy('from_annee')->orderBy('id');
     }
 
     public function hours(): HasMany
@@ -79,6 +79,7 @@ class Employee extends Model
             'compteBancaire' => $includeFullBankAccount ? $iban : BankAccount::mask($iban),
             'salaireHistory' => $this->salaryHistory->map(fn (SalaryHistory $h) => [
                 'fromMois' => $h->from_mois,
+                'fromAnnee' => (int) ($h->from_annee ?: 2026),
                 'salaire' => (float) $h->salaire,
             ])->values()->all(),
         ];

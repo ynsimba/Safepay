@@ -153,12 +153,13 @@ export function DataProvider({ children }) {
 
   /** Fiches du mois : un calcul par employé (salaire en vigueur × heures). */
   const getPayslips = useCallback(
-    (mois) => {
+    (mois, annee) => {
+      const year = annee ?? state.currentYear;
       const byEmp = state.hoursByMonth[mois] || {};
       return state.employees.map((emp) => {
         const hours = byEmp[emp.id] || { heuresPrestees: '', bonusHoraire: 0 };
         const payslip = computePayslip({
-          salaireInitial: salaireForMonth(emp, mois),
+          salaireInitial: salaireForMonth(emp, mois, year),
           heuresPrestees: hours.heuresPrestees,
           bonusHoraire: hours.bonusHoraire,
           mois,
@@ -167,7 +168,7 @@ export function DataProvider({ children }) {
         return { employee: emp, hours, payslip };
       });
     },
-    [state.employees, state.hoursByMonth, state.settings]
+    [state.employees, state.hoursByMonth, state.settings, state.currentYear]
   );
 
   const archiveMonth = useCallback((mois, annee) => run(() => api.archiveMonth(mois, annee)), [run]);

@@ -83,7 +83,7 @@ export default function Payslips() {
     setArchived(false);
   }
 
-  const list = getPayslips(mois);
+  const list = getPayslips(mois, annee);
 
   const sortedList = useMemo(() => {
     const filtered = list.filter((r) =>
@@ -274,7 +274,7 @@ function PayslipDetail({ data, mois, annee, settings }) {
         <tbody>
           <tr>
             <td>Salaire initial (barème)</td>
-            <td className="text-end">{formatCurrency(salaireForMonth(employee, mois))}</td>
+            <td className="text-end">{formatCurrency(salaireForMonth(employee, mois, annee))}</td>
           </tr>
           <tr>
             <td>Retenue pour heures manquantes</td>

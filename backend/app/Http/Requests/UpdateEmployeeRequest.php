@@ -24,6 +24,7 @@ class UpdateEmployeeRequest extends FormRequest
             'compteBancaire' => ['nullable', 'string', 'max:64'],
             'salaireHistory' => ['sometimes', 'array', 'max:24'],
             'salaireHistory.*.fromMois' => ['required', 'string', Rule::in(PayrollService::MOIS)],
+            'salaireHistory.*.fromAnnee' => ['sometimes', 'integer', 'min:2000', 'max:2100'],
             'salaireHistory.*.salaire' => ['required', 'numeric', 'min:0', 'max:10000000'],
         ];
     }

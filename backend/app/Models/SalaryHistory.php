@@ -12,11 +12,14 @@ class SalaryHistory extends Model
 
     protected $table = 'salary_history';
 
-    protected $fillable = ['employee_id', 'from_mois', 'salaire'];
+    protected $fillable = ['employee_id', 'from_mois', 'from_annee', 'salaire'];
 
     protected function casts(): array
     {
-        return ['salaire' => 'float'];
+        return [
+            'salaire' => 'float',
+            'from_annee' => 'integer',
+        ];
     }
 
     public function employee(): BelongsTo

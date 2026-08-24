@@ -18,15 +18,16 @@ CREATE TABLE IF NOT EXISTS employees (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Barème : un salaire s'applique à partir de from_mois jusqu'au suivant.
+-- Barème : un salaire s'applique à partir de from_mois / from_annee jusqu'au suivant.
 CREATE TABLE IF NOT EXISTS salary_history (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   employee_id VARCHAR(32) NOT NULL,
   from_mois VARCHAR(20) NOT NULL,
+  from_annee SMALLINT UNSIGNED NOT NULL DEFAULT 2026,
   salaire DECIMAL(12,2) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uniq_employee_from_mois (employee_id, from_mois),
+  UNIQUE KEY uniq_employee_from_mois_annee (employee_id, from_mois, from_annee),
   CONSTRAINT fk_salary_history_employee
     FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

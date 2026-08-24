@@ -34,20 +34,38 @@ function monthIndex(mois) {
   return MOIS.indexOf(mois);
 }
 
+/** Rang chronologique d'une période (année × 12 + mois), ou -1 si invalide. */
+function periodRank(mois, annee) {
+  const idx = monthIndex(mois);
+  const year = Number(annee);
+  if (idx < 0 || !Number.isFinite(year) || year < 2000) return -1;
+  return year * 12 + idx;
+}
+
+function historyYear(entry, fallbackYear) {
+  const y = Number(entry?.fromAnnee);
+  if (Number.isFinite(y) && y >= 2000) return y;
+  const fallback = Number(fallbackYear);
+  return Number.isFinite(fallback) && fallback >= 2000 ? fallback : new Date().getFullYear();
+}
+
 /**
  * Salaire de base en vigueur pour un mois donné, d'après l'historique
  * des modifications (chaque entrée s'applique jusqu'à la suivante).
  */
-export function salaireForMonth(employee, mois) {
+export function salaireForMonth(employee, mois, annee) {
   const history = employee?.salaireHistory;
   if (!Array.isArray(history) || history.length === 0) {
     return Number(employee?.salaireInitial) || 0;
   }
 
-  const idx = monthIndex(mois);
+  const target = periodRank(mois, annee ?? historyYear(history[0]));
+  if (target < 0) return Number(employee?.salaireInitial) || 0;
+
   const applicable = history
-    .filter((h) => monthIndex(h.fromMois) !== -1 && monthIndex(h.fromMois) <= idx)
-    .sort((a, b) => monthIndex(a.fromMois) - monthIndex(b.fromMois));
+    .map((h) => ({ ...h, rank: periodRank(h.fromMois, historyYear(h, annee)) }))
+    .filter((h) => h.rank >= 0 && h.rank <= target)
+    .sort((a, b) => a.rank - b.rank);
 
   if (!applicable.length) return Number(employee?.salaireInitial) || 0;
   return Number(applicable[applicable.length - 1].salaire) || 0;
@@ -58,24 +76,25 @@ export function salaireForMonth(employee, mois) {
  * conservent l'ancien montant, les mois suivants (y compris le mois d'effet)
  * utilisent le nouveau.
  */
-export function applySalaryChange(employee, newSalaire, fromMois) {
-  const fromIdx = monthIndex(fromMois);
+export function applySalaryChange(employee, newSalaire, fromMois, fromAnnee) {
+  const year = Number(fromAnnee) || new Date().getFullYear();
+  const fromRank = periodRank(fromMois, year);
   const oldSalaire = Number(employee.salaireInitial);
   const amount = Number(newSalaire);
   let history = Array.isArray(employee.salaireHistory) ? [...employee.salaireHistory] : [];
 
   if (history.length === 0) {
-    history = [{ fromMois: 'Janvier', salaire: oldSalaire }];
+    history = [{ fromMois: 'Janvier', fromAnnee: year, salaire: oldSalaire }];
   }
 
-  history = history.filter((h) => monthIndex(h.fromMois) < fromIdx);
+  history = history.filter((h) => periodRank(h.fromMois, historyYear(h, year)) < fromRank);
 
-  if (fromIdx > 0 && history.length === 0) {
-    history = [{ fromMois: 'Janvier', salaire: oldSalaire }];
+  if (fromRank > periodRank('Janvier', year) && history.length === 0) {
+    history = [{ fromMois: 'Janvier', fromAnnee: year, salaire: oldSalaire }];
   }
 
-  history.push({ fromMois, salaire: amount });
-  history.sort((a, b) => monthIndex(a.fromMois) - monthIndex(b.fromMois));
+  history.push({ fromMois, fromAnnee: year, salaire: amount });
+  history.sort((a, b) => periodRank(a.fromMois, historyYear(a, year)) - periodRank(b.fromMois, historyYear(b, year)));
 
   return {
     salaireInitial: amount,

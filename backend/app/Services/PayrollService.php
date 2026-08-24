@@ -42,7 +42,7 @@ class PayrollService
         return isset($table[$mois]) ? (float) $table[$mois] : 186.0;
     }
 
-    public function salaireForMonth(array $employee, string $mois): float
+    public function salaireForMonth(array $employee, string $mois, ?int $annee = null): float
     {
         $history = $employee['salaireHistory'] ?? [];
         if (! $history) {
@@ -52,11 +52,18 @@ class PayrollService
         if ($idx === false) {
             return (float) ($employee['salaireInitial'] ?? 0);
         }
+        $year = $annee ?? (int) ($history[0]['fromAnnee'] ?? date('Y'));
+        $target = $year * 12 + $idx;
         $applicable = [];
         foreach ($history as $row) {
             $hIdx = array_search($row['fromMois'], self::MOIS, true);
-            if ($hIdx !== false && $hIdx <= $idx) {
-                $applicable[] = [$hIdx, $row];
+            $hYear = (int) ($row['fromAnnee'] ?? $year);
+            if ($hIdx === false || $hYear < 2000) {
+                continue;
+            }
+            $rank = $hYear * 12 + $hIdx;
+            if ($rank <= $target) {
+                $applicable[] = [$rank, $row];
             }
         }
         if (! $applicable) {
@@ -248,7 +255,7 @@ class PayrollService
             foreach ($state['employees'] as $emp) {
                 $hours = $byEmp[$emp['id']] ?? ['heuresPrestees' => '', 'bonusHoraire' => 0];
                 $payslip = $this->computePayslip([
-                    'salaireInitial' => $this->salaireForMonth($emp, $mois),
+                    'salaireInitial' => $this->salaireForMonth($emp, $mois, $annee),
                     'heuresPrestees' => $hours['heuresPrestees'],
                     'bonusHoraire' => $hours['bonusHoraire'] ?? 0,
                     'mois' => $mois,
@@ -399,6 +406,7 @@ class PayrollService
             SalaryHistory::query()->create([
                 'employee_id' => $employeeId,
                 'from_mois' => $row['fromMois'],
+                'from_annee' => (int) ($row['fromAnnee'] ?? 2026),
                 'salaire' => (float) $row['salaire'],
             ]);
         }

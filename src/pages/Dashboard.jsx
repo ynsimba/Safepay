@@ -162,7 +162,7 @@ export default function Dashboard() {
         const hours = byEmp[emp.id] || { heuresPrestees: '', bonusHoraire: 0 };
         if (!hasEncodedHours(hours)) return null;
         const payslip = computePayslip({
-          salaireInitial: salaireForMonth(emp, mois),
+          salaireInitial: salaireForMonth(emp, mois, annee),
           heuresPrestees: hours.heuresPrestees,
           bonusHoraire: hours.bonusHoraire,
           mois,
@@ -233,7 +233,7 @@ export default function Dashboard() {
         const hours = byEmp[emp.id];
         if (!hasEncodedHours(hours)) return;
         const payslip = computePayslip({
-          salaireInitial: salaireForMonth(emp, m),
+          salaireInitial: salaireForMonth(emp, m, annee),
           heuresPrestees: hours.heuresPrestees,
           bonusHoraire: hours.bonusHoraire,
           mois: m,

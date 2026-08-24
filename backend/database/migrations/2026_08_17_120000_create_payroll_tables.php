@@ -28,9 +28,10 @@ return new class extends Migration
                 $table->increments('id');
                 $table->string('employee_id', 32);
                 $table->string('from_mois', 20);
+                $table->unsignedSmallInteger('from_annee')->default(2026);
                 $table->decimal('salaire', 12, 2);
                 $table->timestamp('created_at')->useCurrent();
-                $table->unique(['employee_id', 'from_mois']);
+                $table->unique(['employee_id', 'from_mois', 'from_annee'], 'uniq_employee_from_mois_annee');
                 $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
             });
         }
