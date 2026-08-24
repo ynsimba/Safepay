@@ -511,6 +511,25 @@ body {
   color: color-mix(in srgb, var(--sp-lime) 55%, #3d4a12);
 }
 
+.sp-iban-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+
+.sp-iban-toggle {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.25rem;
+  line-height: 1;
+  color: var(--sp-text-muted);
+}
+
+.sp-iban-toggle:hover,
+.sp-iban-toggle[aria-pressed="true"] {
+  color: var(--sp-text);
+}
+
 .sp-table td {
   vertical-align: middle;
   font-size: 0.88rem;

@@ -56,6 +56,8 @@ export default function Employees() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [errors, setErrors] = useState({});
   const [sort, setSort] = useState({ key: 'nom', dir: 'asc' });
+  const [revealedAccounts, setRevealedAccounts] = useState({});
+  const [accountLoadingId, setAccountLoadingId] = useState(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -136,6 +138,27 @@ export default function Employees() {
     Promise.resolve(persist).then(() => setShowModal(false)).catch(() => {});
   }
 
+  async function toggleAccount(emp) {
+    if (!emp.compteBancaire) return;
+    if (revealedAccounts[emp.id]) {
+      setRevealedAccounts((current) => {
+        const next = { ...current };
+        delete next[emp.id];
+        return next;
+      });
+      return;
+    }
+    setAccountLoadingId(emp.id);
+    try {
+      const full = await api.getEmployee(emp.id);
+      setRevealedAccounts((current) => ({ ...current, [emp.id]: full.compteBancaire || emp.compteBancaire }));
+    } catch {
+      setRevealedAccounts((current) => ({ ...current, [emp.id]: emp.compteBancaire }));
+    } finally {
+      setAccountLoadingId(null);
+    }
+  }
+
   return (
     <div className="d-flex flex-column gap-3">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -179,7 +202,24 @@ export default function Employees() {
                       </div>
                     )}
                   </td>
-                  <td className="text-muted small">{emp.compteBancaire || '—'}</td>
+                  <td className="text-muted small">
+                    {emp.compteBancaire ? (
+                      <span className="sp-iban-cell">
+                        <span>{revealedAccounts[emp.id] || emp.compteBancaire}</span>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary rounded-0 border-0 sp-iban-toggle"
+                          aria-pressed={!!revealedAccounts[emp.id]}
+                          aria-label={revealedAccounts[emp.id] ? 'Masquer le compte bancaire' : 'Afficher le compte bancaire'}
+                          title={revealedAccounts[emp.id] ? 'Masquer' : 'Afficher'}
+                          disabled={accountLoadingId === emp.id}
+                          onClick={() => toggleAccount(emp)}
+                        >
+                          <i className={`bi ${accountLoadingId === emp.id ? 'bi-hourglass-split' : revealedAccounts[emp.id] ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
+                        </button>
+                      </span>
+                    ) : '—'}
+                  </td>
                   <td className="text-end">
                     <button className="btn btn-sm btn-outline-secondary rounded-0 border-0 me-1" onClick={() => openEdit(emp)}>
                       <i className="bi bi-pencil" />
