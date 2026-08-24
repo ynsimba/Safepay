@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\MonthRequest;
+use App\Http\Requests\ResetDataRequest;
+use App\Http\Requests\StoreEmployeeRequest;
+use App\Http\Requests\UpdateEmployeeRequest;
+use App\Http\Requests\UpdateSettingsRequest;
+use App\Http\Requests\UpsertHoursRequest;
 use App\Services\PayrollService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /** Endpoints métier de paie. Chaque mutation renvoie l'état complet. */
 class PayrollController extends Controller
@@ -16,14 +21,14 @@ class PayrollController extends Controller
         return response()->json($this->payroll->getState());
     }
 
-    public function storeEmployee(Request $request): JsonResponse
+    public function storeEmployee(StoreEmployeeRequest $request): JsonResponse
     {
-        return response()->json($this->payroll->addEmployee($request->all()));
+        return response()->json($this->payroll->addEmployee($request->validated()));
     }
 
-    public function updateEmployee(Request $request, string $id): JsonResponse
+    public function updateEmployee(UpdateEmployeeRequest $request, string $id): JsonResponse
     {
-        return response()->json($this->payroll->updateEmployee($id, $request->all()));
+        return response()->json($this->payroll->updateEmployee($id, $request->validated()));
     }
 
     public function destroyEmployee(string $id): JsonResponse
@@ -31,32 +36,36 @@ class PayrollController extends Controller
         return response()->json($this->payroll->deleteEmployee($id));
     }
 
-    public function upsertHours(Request $request): JsonResponse
+    public function upsertHours(UpsertHoursRequest $request): JsonResponse
     {
-        return response()->json($this->payroll->setHours($request->all()));
+        return response()->json($this->payroll->setHours($request->validated()));
     }
 
-    public function updateSettings(Request $request): JsonResponse
+    public function updateSettings(UpdateSettingsRequest $request): JsonResponse
     {
-        return response()->json($this->payroll->updateSettings($request->all()));
+        return response()->json($this->payroll->updateSettings($request->validated()));
     }
 
-    public function setCurrentMonth(Request $request): JsonResponse
+    public function setCurrentMonth(MonthRequest $request): JsonResponse
     {
-        return response()->json($this->payroll->setCurrentMonth((string) $request->input('mois', '')));
+        return response()->json($this->payroll->setCurrentMonth((string) $request->validated('mois')));
     }
 
-    public function archive(Request $request): JsonResponse
+    public function archive(MonthRequest $request): JsonResponse
     {
-        return response()->json($this->payroll->archiveMonth((string) $request->input('mois', '')));
+        return response()->json($this->payroll->archiveMonth((string) $request->validated('mois')));
     }
 
     public function destroyArchive(string $mois): JsonResponse
     {
+        if (! in_array($mois, PayrollService::MOIS, true)) {
+            abort(404);
+        }
+
         return response()->json($this->payroll->deleteArchiveMonth($mois));
     }
 
-    public function reset(): JsonResponse
+    public function reset(ResetDataRequest $request): JsonResponse
     {
         return response()->json($this->payroll->resetAllData());
     }

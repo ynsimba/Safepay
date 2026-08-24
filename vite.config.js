@@ -52,6 +52,24 @@ function laravelApiPlugin() {
 export default defineConfig({
   plugins: [react(), laravelApiPlugin()],
   server: {
+    headers: {
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+      'Content-Security-Policy': [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        "img-src 'self' data:",
+        "connect-src 'self' ws://localhost:5173 ws://127.0.0.1:5173",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+      ].join('; '),
+    },
     proxy: {
       '/api': {
         target: `http://${LARAVEL_HOST}:${LARAVEL_PORT}`,

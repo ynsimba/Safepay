@@ -4,12 +4,42 @@
 import { useMemo, useState } from 'react';
 import { useData } from '../context/DataContext.jsx';
 import { heuresTheoriques, formatHours } from '../utils/payroll';
+import { nextSort, sortRows } from '../utils/tableSort.js';
 import MonthSelect from '../components/MonthSelect.jsx';
 import { DeltaBadge } from '../components/Badges.jsx';
+import SortTh from '../components/SortTh.jsx';
+import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
+
+const SORT_COLUMNS = [
+  { key: 'employe', label: 'Employé' },
+  { key: 'heures', label: 'Heures prestées', style: { width: 160 } },
+  { key: 'theo', label: 'Heures théoriques', style: { width: 130 } },
+  { key: 'delta', label: 'Delta', style: { width: 150 } },
+  { key: 'bonus', label: 'Bonus horaire', style: { width: 160 } },
+];
+
+function hoursSortValue(row, key) {
+  switch (key) {
+    case 'employe':
+      return `${row.emp.nom} ${row.emp.prenom}`;
+    case 'heures':
+      return row.h.heuresPrestees === '' || row.h.heuresPrestees == null ? null : Number(row.h.heuresPrestees);
+    case 'theo':
+      return Number(row.theo);
+    case 'delta':
+      return row.delta == null ? null : Number(row.delta);
+    case 'bonus':
+      return row.h.bonusHoraire === '' || row.h.bonusHoraire == null ? null : Number(row.h.bonusHoraire);
+    default:
+      return '';
+  }
+}
 
 export default function Hours() {
   const { employees, hoursByMonth, setHours, currentMonth, setCurrentMonth, settings, archivedMonths } = useData();
   const [mois, setMois] = useState(currentMonth);
+  const [sort, setSort] = useState({ key: 'employe', dir: 'asc' });
+  const [search, setSearch] = useState('');
 
   function selectMonth(m) {
     setMois(m);
@@ -26,10 +56,17 @@ export default function Hours() {
         const h = byEmp[emp.id] || { heuresPrestees: '', bonusHoraire: '' };
         const hasHours = h.heuresPrestees !== '' && h.heuresPrestees !== null && Number(h.heuresPrestees) !== 0;
         const delta = hasHours ? Number(h.heuresPrestees) - theo : null;
-        return { emp, h, delta };
+        return { emp, h, delta, theo };
       }),
     [employees, byEmp, theo]
   );
+
+  const visibleRows = useMemo(() => {
+    const filtered = rows.filter((r) =>
+      matchesSearch(`${r.emp.nom} ${r.emp.prenom} ${r.emp.perception}`, search)
+    );
+    return sortRows(filtered, sort, hoursSortValue);
+  }, [rows, sort, search]);
 
   const totals = useMemo(() => {
     const filled = rows.filter((r) => r.delta !== null);
@@ -42,10 +79,11 @@ export default function Hours() {
   return (
     <div className="d-flex flex-column gap-3">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           <span className="text-muted small">Mois d'encodage :</span>
           <MonthSelect value={mois} onChange={selectMonth} className="w-auto" highlight={archivedMonths} />
           <span className="badge bg-light text-dark border">Heures théoriques : {formatHours(theo)}</span>
+          <SearchBar value={search} onChange={setSearch} />
         </div>
         {isArchived && (
           <span className="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-2">
@@ -65,15 +103,22 @@ export default function Hours() {
           <table className="table sp-table mb-0 align-middle">
             <thead>
               <tr>
-                <th>Employé</th>
-                <th style={{ width: 160 }}>Heures prestées</th>
-                <th style={{ width: 130 }}>Heures théoriques</th>
-                <th style={{ width: 150 }}>Delta</th>
-                <th style={{ width: 160 }}>Bonus horaire</th>
+                {SORT_COLUMNS.map((column) => (
+                  <SortTh
+                    key={column.key}
+                    column={column}
+                    sort={sort}
+                    onSort={(key) => setSort((s) => nextSort(s, key))}
+                    style={column.style}
+                  />
+                ))}
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ emp, h, delta }) => (
+              {visibleRows.length === 0 && (
+                <tr><td colSpan={5} className="text-center text-muted py-4">Aucun employé trouvé</td></tr>
+              )}
+              {visibleRows.map(({ emp, h, delta, theo: rowTheo }) => (
                 <tr key={emp.id}>
                   <td className="fw-semibold">{emp.nom} {emp.prenom}</td>
                   <td>
@@ -87,7 +132,7 @@ export default function Hours() {
                       onChange={(e) => setHours(mois, emp.id, { heuresPrestees: e.target.value === '' ? '' : Number(e.target.value) })}
                     />
                   </td>
-                  <td className="text-muted">{formatHours(theo)}</td>
+                  <td className="text-muted">{formatHours(rowTheo)}</td>
                   <td><DeltaBadge delta={delta} /></td>
                   <td>
                     <input

@@ -5,10 +5,38 @@ import { useMemo, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useData } from '../context/DataContext.jsx';
 import { formatCurrency, applySalaryChange } from '../utils/payroll';
+import { nextSort, sortRows } from '../utils/tableSort.js';
 import { PerceptionBadge } from '../components/Badges.jsx';
 import MonthSelect from '../components/MonthSelect.jsx';
+import SortTh from '../components/SortTh.jsx';
+import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
 
 const EMPTY_FORM = { nom: '', prenom: '', perception: 'VB', salaireInitial: '', compteBancaire: '', salaireFromMois: '' };
+
+const SORT_COLUMNS = [
+  { key: 'nom', label: 'Nom' },
+  { key: 'prenom', label: 'Prénom' },
+  { key: 'perception', label: 'Perception' },
+  { key: 'salaire', label: 'Salaire initial' },
+  { key: 'compte', label: 'Compte bancaire' },
+];
+
+function employeeSortValue(emp, key) {
+  switch (key) {
+    case 'nom':
+      return emp.nom || '';
+    case 'prenom':
+      return emp.prenom || '';
+    case 'perception':
+      return emp.perception || '';
+    case 'salaire':
+      return Number(emp.salaireInitial || 0);
+    case 'compte':
+      return emp.compteBancaire || '';
+    default:
+      return '';
+  }
+}
 
 /** Page Employés : liste, recherche, formulaire modal. */
 export default function Employees() {
@@ -21,12 +49,20 @@ export default function Employees() {
   const [originalSalaire, setOriginalSalaire] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [errors, setErrors] = useState({});
+  const [sort, setSort] = useState({ key: 'nom', dir: 'asc' });
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return employees;
-    return employees.filter((e) => `${e.nom} ${e.prenom}`.toLowerCase().includes(q));
+    return employees.filter((e) =>
+      matchesSearch(`${e.nom} ${e.prenom} ${e.perception} ${e.compteBancaire || ''}`, q)
+    );
   }, [employees, search]);
+
+  const sorted = useMemo(
+    () => sortRows(filtered, sort, employeeSortValue),
+    [filtered, sort]
+  );
 
   const total = useMemo(() => employees.reduce((s, e) => s + Number(e.salaireInitial || 0), 0), [employees]);
   const editingEmployee = editingId ? employees.find((e) => e.id === editingId) : null;
@@ -88,15 +124,7 @@ export default function Employees() {
   return (
     <div className="d-flex flex-column gap-3">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div className="input-group" style={{ maxWidth: 320 }}>
-          <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted" /></span>
-          <input
-            className="form-control border-start-0"
-            placeholder="Rechercher un employé..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <SearchBar value={search} onChange={setSearch} />
         <Button onClick={openAdd}><i className="bi bi-plus-lg me-1" /> Ajouter un employé</Button>
       </div>
 
@@ -109,19 +137,17 @@ export default function Employees() {
           <table className="table sp-table mb-0">
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Perception</th>
-                <th>Salaire initial</th>
-                <th>Compte bancaire</th>
+                {SORT_COLUMNS.map((column) => (
+                  <SortTh key={column.key} column={column} sort={sort} onSort={(key) => setSort((s) => nextSort(s, key))} />
+                ))}
                 <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
+              {sorted.length === 0 && (
                 <tr><td colSpan={6} className="text-center text-muted py-4">Aucun employé trouvé</td></tr>
               )}
-              {filtered.map((emp) => (
+              {sorted.map((emp) => (
                 <tr key={emp.id}>
                   <td className="fw-semibold">{emp.nom}</td>
                   <td>{emp.prenom}</td>

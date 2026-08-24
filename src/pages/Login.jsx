@@ -29,9 +29,9 @@ export default function Login() {
   return (
     <div className="sp-login">
       <form className="sp-login-card" onSubmit={handleSubmit} autoComplete="on">
-        <img src="/icons.png" alt="Safecheck Pay" className="sp-login-logo" />
+        <img src="/icons.png" alt="SafePay" className="sp-login-logo" />
         <h1 className="sp-login-title">Connexion</h1>
-        <p className="sp-login-sub">Accédez à la gestion salariale Safecheck Pay.</p>
+        <p className="sp-login-sub">Accédez à la gestion salariale SafePay.</p>
 
         {error && (
           <div className="alert alert-danger py-2" role="alert">{error}</div>
@@ -43,7 +43,6 @@ export default function Login() {
           name="email"
           type="email"
           className="form-control mb-3"
-          defaultValue="admin@safecheck.local"
           autoComplete="username"
           required
         />

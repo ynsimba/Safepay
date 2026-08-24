@@ -1,5 +1,5 @@
 /**
- * Identité visuelle Safecheck Pay (lime #aafa03, Poppins).
+ * Identité visuelle SafePay (lime #aafa03, Poppins).
  * Les composants Bootstrap sont surchargés ici pour coller à la marque.
  */
 :root {
@@ -51,6 +51,15 @@ body {
 .alert,
 .input-group-text {
   font-family: var(--sp-font);
+}
+
+.sp-search {
+  max-width: 320px;
+}
+
+.sp-search .form-control:focus {
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--sp-lime) 40%, var(--sp-border));
 }
 
 .app-shell {
@@ -465,17 +474,54 @@ body {
   white-space: nowrap;
 }
 
+.sp-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  font-weight: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sp-th-sort:hover,
+.sp-th-sort.is-active {
+  color: var(--sp-text);
+}
+
+.sp-th-sort i {
+  font-size: 0.7rem;
+  opacity: 0.35;
+}
+
+.sp-th-sort:hover i,
+.sp-th-sort.is-active i {
+  opacity: 1;
+  color: color-mix(in srgb, var(--sp-lime) 55%, #3d4a12);
+}
+
 .sp-table td {
   vertical-align: middle;
   font-size: 0.88rem;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.sp-table tbody tr {
-  transition: background 0.12s ease;
+.sp-table tbody tr:hover > * {
+  --bs-table-accent-bg: var(--sp-sidebar-hover);
+  background-color: var(--sp-sidebar-hover) !important;
+  box-shadow: inset 0 0 0 9999px var(--sp-sidebar-hover);
 }
 
-.sp-table tbody tr:hover {
-  background: #f8f9fd;
+.sp-table tbody tr:hover .form-control {
+  background: color-mix(in srgb, var(--sp-lime) 8%, white);
+  border-color: color-mix(in srgb, var(--sp-lime) 28%, var(--sp-border));
 }
 
 /* ---------- Badges perception / delta ---------- */

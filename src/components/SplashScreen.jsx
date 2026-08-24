@@ -35,7 +35,7 @@ export default function SplashScreen({ ready = false, error = null, onRetry, onD
 
   return (
     <div className={`sp-splash ${leaving ? 'is-leaving' : ''}`} role="status" aria-live="polite" aria-label="Chargement">
-      <img src="/icons.png" alt="Safecheck Pay" className="sp-splash-logo" />
+      <img src="/icons.png" alt="SafePay" className="sp-splash-logo" />
       {error ? (
         <div className="sp-splash-error">
           <p className="mb-2">{error}</p>

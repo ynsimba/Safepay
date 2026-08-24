@@ -4,16 +4,25 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $password = (string) env('ADMIN_PASSWORD', '');
+        if (strlen($password) < 12) {
+            throw new RuntimeException(
+                'Définissez ADMIN_PASSWORD (12 caractères minimum) dans backend/.env avant de lancer le seeder.'
+            );
+        }
+
         User::query()->updateOrCreate(
             ['email' => env('ADMIN_EMAIL', 'admin@safecheck.local')],
             [
                 'name' => env('ADMIN_NAME', 'Administrateur'),
-                'password' => env('ADMIN_PASSWORD', 'Safecheck2026!'),
+                'password' => $password,
+                'role' => 'admin',
             ]
         );
     }

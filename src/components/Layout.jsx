@@ -62,7 +62,7 @@ export default function Layout() {
   const [isMobile, setIsMobile] = useState(isMobileViewport);
   const [open, setOpen] = useState(() => (isMobileViewport() ? false : readDesktopSidebarPref()));
   const location = useLocation();
-  const meta = PAGE_META[location.pathname] || { title: 'Safecheck Pay', sub: '' };
+  const meta = PAGE_META[location.pathname] || { title: 'SafePay', sub: '' };
   const { saveError } = useData();
   const { user, logout } = useAuth();
 
@@ -95,7 +95,7 @@ export default function Layout() {
       <div className={`sp-overlay ${open ? 'open' : ''}`} onClick={() => setOpen(false)} />
       <aside className={`sp-sidebar ${open ? 'open' : ''}`} aria-hidden={!open}>
         <div className="sp-brand">
-          <img src="/icons.png" alt="Safecheck Pay" className="sp-brand-logo" />
+          <img src="/icons.png" alt="SafePay" className="sp-brand-logo" />
         </div>
         <nav className="sp-nav">
           {NAV_ITEMS.map((group) => (

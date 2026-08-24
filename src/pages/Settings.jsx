@@ -14,6 +14,8 @@ export default function Settings() {
   const [newPerception, setNewPerception] = useState('');
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [resetPhrase, setResetPhrase] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     // Resynchronise le formulaire après un reset ou un rechargement MySQL.
@@ -130,16 +132,47 @@ export default function Settings() {
         </Button>
       </div>
 
-      <Modal show={confirmReset} onHide={() => setConfirmReset(false)} centered>
+      <Modal
+        show={confirmReset}
+        onHide={() => { setConfirmReset(false); setResetPhrase(''); }}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title className="fs-6 fw-bold">Réinitialiser toutes les données</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Cette action est irréversible : tous les employés ajoutés, heures encodées et archives seront supprimés et remplacés par les données d'origine importées depuis le fichier Excel.
+          <p className="mb-3">
+            Cette action est irréversible : tous les employés ajoutés, heures encodées et archives seront supprimés et remplacés par les données d&apos;origine.
+          </p>
+          <label className="form-label small fw-semibold" htmlFor="reset-confirm">
+            Tapez RESET pour confirmer
+          </label>
+          <input
+            id="reset-confirm"
+            className="form-control"
+            value={resetPhrase}
+            onChange={(e) => setResetPhrase(e.target.value)}
+            autoComplete="off"
+          />
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="light" onClick={() => setConfirmReset(false)}>Annuler</Button>
-          <Button variant="danger" onClick={() => { resetAllData(); setConfirmReset(false); }}>Tout réinitialiser</Button>
+          <Button variant="light" onClick={() => { setConfirmReset(false); setResetPhrase(''); }}>Annuler</Button>
+          <Button
+            variant="danger"
+            disabled={resetPhrase !== 'RESET' || resetting}
+            onClick={async () => {
+              setResetting(true);
+              try {
+                await resetAllData();
+                setConfirmReset(false);
+                setResetPhrase('');
+              } finally {
+                setResetting(false);
+              }
+            }}
+          >
+            Tout réinitialiser
+          </Button>
         </Modal.Footer>
       </Modal>
     </div>

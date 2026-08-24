@@ -1,25 +1,13 @@
 /**
- * Client HTTP vers l'API Laravel Sanctum (proxy Vite : /api → :8000/api).
- * Le jeton Bearer est stocké dans localStorage.
+ * Client HTTP vers l'API Laravel (proxy Vite : /api → Laravel).
+ * Le jeton Sanctum est un cookie httpOnly : jamais lu par JavaScript.
  */
 const BASE = '/api';
-const TOKEN_KEY = 'safecheck-pay-token';
 
-export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
-}
-
-function authHeaders({ skipAuth = false } = {}) {
-  const token = skipAuth ? null : getToken();
+function authHeaders() {
   return {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
@@ -27,13 +15,13 @@ function authHeaders({ skipAuth = false } = {}) {
 async function request(path, options = {}) {
   const { headers: extraHeaders, skipAuth = false, ...rest } = options;
   const res = await fetch(`${BASE}${path}`, {
+    credentials: 'same-origin',
     ...rest,
-    headers: { ...authHeaders({ skipAuth }), ...extraHeaders },
+    headers: { ...authHeaders(), ...extraHeaders },
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
     if (!skipAuth) {
-      setToken(null);
       window.dispatchEvent(new Event('safecheck-auth-lost'));
     }
     throw new Error(data.error || data.message || 'Non authentifié.');
@@ -61,5 +49,5 @@ export const api = {
   setCurrentMonth: (mois) => request('/current-month', { method: 'PUT', body: JSON.stringify({ mois }) }),
   archiveMonth: (mois) => request('/archive', { method: 'POST', body: JSON.stringify({ mois }) }),
   deleteArchiveMonth: (mois) => request(`/archive/${encodeURIComponent(mois)}`, { method: 'DELETE' }),
-  resetAllData: () => request('/reset', { method: 'POST' }),
+  resetAllData: () => request('/reset', { method: 'POST', body: JSON.stringify({ confirm: 'RESET' }) }),
 };

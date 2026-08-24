@@ -109,7 +109,7 @@ class PayrollService
 
     public function addEmployee(array $body): array
     {
-        $id = $body['id'] ?? ('e'.(string) round(microtime(true) * 1000));
+        $id = 'e'.bin2hex(random_bytes(8));
         Employee::query()->create([
             'id' => $id,
             'nom' => trim((string) ($body['nom'] ?? '')),
@@ -143,7 +143,7 @@ class PayrollService
 
     public function deleteEmployee(string $id): array
     {
-        Employee::query()->where('id', $id)->delete();
+        Employee::query()->findOrFail($id)->delete();
 
         return $this->getState();
     }

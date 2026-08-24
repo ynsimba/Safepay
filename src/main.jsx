@@ -1,6 +1,6 @@
 /**
  * Point d'entrée de l'application React.
- * Monte Safecheck Pay dans #root et enveloppe l'arbre avec le fournisseur de données MySQL.
+ * Monte SafePay dans #root et enveloppe l'arbre avec le fournisseur de données MySQL.
  */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

@@ -1,8 +1,14 @@
 /**
- * Session Sanctum : jeton Bearer + utilisateur connecté.
+ * Session Sanctum : cookie httpOnly + utilisateur connecté.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, getToken, setToken } from '../api';
+import { api } from '../api';
+
+try {
+  localStorage.removeItem('safecheck-pay-token');
+} catch {
+  /* stockage indisponible */
+}
 
 const AuthContext = createContext(null);
 
@@ -11,16 +17,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const clearSession = useCallback(() => {
-    setToken(null);
     setUser(null);
   }, []);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return undefined;
-    }
     api.me()
       .then(setUser)
       .catch(() => clearSession())
@@ -33,7 +33,6 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const data = await api.login(email, password);
-    setToken(data.token);
     setUser(data.user);
     return data.user;
   }, []);

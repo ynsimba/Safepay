@@ -10,6 +10,9 @@ import { useData } from '../context/DataContext.jsx';
 import { MOIS, heuresTheoriques, formatCurrency, computePayslip, salaireForMonth } from '../utils/payroll';
 import MonthSelect from '../components/MonthSelect.jsx';
 import { DeltaBadge } from '../components/Badges.jsx';
+import SortTh from '../components/SortTh.jsx';
+import { nextSort, sortRows } from '../utils/tableSort.js';
+import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
 
 const COLORS = ['#3457d5', '#17c3a2', '#f5a524', '#e5484d'];
 
@@ -102,6 +105,8 @@ function Kpi({ icon, tone, label, value, sub, col = 'col-12 col-sm-6 col-xl-4' }
 export default function Dashboard() {
   const { employees, archive, hoursByMonth, settings, currentMonth, archivedMonths } = useData();
   const [mois, setMois] = useState(currentMonth);
+  const [empSort, setEmpSort] = useState({ key: 'delta', dir: 'asc' });
+  const [search, setSearch] = useState('');
 
   // KPI et camembert : uniquement le mois archivé sélectionné.
   const rows = useMemo(() => archive.filter((a) => a.mois === mois), [archive, mois]);
@@ -175,11 +180,20 @@ export default function Dashboard() {
 
   const parEmploye = useMemo(
     () =>
-      rows
-        .map((r) => ({ nom: `${r.nom} ${r.prenom}`, delta: r.delta ?? 0, retenue: r.retenue || 0, raw: r }))
-        .sort((a, b) => a.delta - b.delta),
+      rows.map((r) => ({ nom: `${r.nom} ${r.prenom}`, delta: r.delta ?? 0, retenue: r.retenue || 0, raw: r })),
     [rows]
   );
+
+  const parEmployeSorted = useMemo(() => {
+    const filtered = parEmploye.filter((row) =>
+      matchesSearch(`${row.nom} ${row.raw.perception || ''}`, search)
+    );
+    return sortRows(filtered, empSort, (row, key) => {
+      if (key === 'nom') return row.nom;
+      if (key === 'delta') return row.raw.delta == null ? null : Number(row.raw.delta);
+      return Number(row.retenue || 0);
+    });
+  }, [parEmploye, empSort, search]);
 
   const parPerception = useMemo(() => {
     const groups = {};
@@ -340,17 +354,28 @@ export default function Dashboard() {
       <div className="row g-3">
         <div className="col-12 col-lg-7">
           <div className="sp-card p-3 h-100">
-            <h6 className="fw-bold mb-3">Par employé ({mois}) — delta d'heures</h6>
+            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <h6 className="fw-bold mb-0">Par employé ({mois}) — delta d'heures</h6>
+              <SearchBar value={search} onChange={setSearch} />
+            </div>
             <div className="table-responsive" style={{ maxHeight: 340, overflowY: 'auto' }}>
               <table className="table sp-table mb-0">
                 <thead>
-                  <tr><th>Employé</th><th>Delta heures</th><th>Retenue</th></tr>
+                  <tr>
+                    <SortTh column={{ key: 'nom', label: 'Employé' }} sort={empSort} onSort={(key) => setEmpSort((s) => nextSort(s, key))} />
+                    <SortTh column={{ key: 'delta', label: 'Delta heures' }} sort={empSort} onSort={(key) => setEmpSort((s) => nextSort(s, key))} />
+                    <SortTh column={{ key: 'retenue', label: 'Retenue' }} sort={empSort} onSort={(key) => setEmpSort((s) => nextSort(s, key))} />
+                  </tr>
                 </thead>
                 <tbody>
-                  {parEmploye.length === 0 && (
-                    <tr><td colSpan={3} className="text-center text-muted py-4">Aucune donnée pour ce mois</td></tr>
+                  {parEmployeSorted.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="text-center text-muted py-4">
+                        {search.trim() ? 'Aucun employé trouvé' : 'Aucune donnée pour ce mois'}
+                      </td>
+                    </tr>
                   )}
-                  {parEmploye.map((r) => (
+                  {parEmployeSorted.map((r) => (
                     <tr key={r.nom}>
                       <td>{r.nom}</td>
                       <td><DeltaBadge delta={r.raw.delta} /></td>

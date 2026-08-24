@@ -5,8 +5,50 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useData } from '../context/DataContext.jsx';
 import { formatCurrency, formatHours, heuresTheoriques, salaireForMonth } from '../utils/payroll';
+import { nextSort, sortRows } from '../utils/tableSort.js';
 import MonthSelect from '../components/MonthSelect.jsx';
 import { PerceptionBadge, DeltaBadge } from '../components/Badges.jsx';
+import SortTh from '../components/SortTh.jsx';
+import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
+
+const SORT_COLUMNS = [
+  { key: 'nom', label: 'Nom' },
+  { key: 'prenom', label: 'Prénom' },
+  { key: 'perception', label: 'Perception' },
+  { key: 'heures', label: 'Heures prestées' },
+  { key: 'delta', label: 'Delta' },
+  { key: 'salaire', label: 'Salaire' },
+  { key: 'bonus', label: 'Bonus' },
+  { key: 'retenue', label: 'Retenue' },
+  { key: 'net', label: 'Salaire + bonus' },
+];
+
+function sortValue(row, key) {
+  switch (key) {
+    case 'nom':
+      return row.employee.nom || '';
+    case 'prenom':
+      return row.employee.prenom || '';
+    case 'perception':
+      return row.employee.perception || '';
+    case 'heures':
+      return row.hours.heuresPrestees === '' || row.hours.heuresPrestees == null
+        ? null
+        : Number(row.hours.heuresPrestees);
+    case 'delta':
+      return row.payslip.delta == null ? null : Number(row.payslip.delta);
+    case 'salaire':
+      return Number(row.payslip.salaire || 0);
+    case 'bonus':
+      return Number(row.payslip.montantBonus || 0);
+    case 'retenue':
+      return Number(row.payslip.retenue || 0);
+    case 'net':
+      return Number(row.payslip.salairePlusBonus || 0);
+    default:
+      return '';
+  }
+}
 
 export default function Payslips() {
   const { getPayslips, archiveMonth, currentMonth, setCurrentMonth, archivedMonths, settings } = useData();
@@ -14,6 +56,8 @@ export default function Payslips() {
   const [selected, setSelected] = useState(null);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archived, setArchived] = useState(false);
+  const [sort, setSort] = useState({ key: 'nom', dir: 'asc' });
+  const [search, setSearch] = useState('');
 
   function selectMonth(m) {
     setMois(m);
@@ -22,6 +66,17 @@ export default function Payslips() {
   }
 
   const list = getPayslips(mois);
+
+  const sortedList = useMemo(() => {
+    const filtered = list.filter((r) =>
+      matchesSearch(`${r.employee.nom} ${r.employee.prenom} ${r.employee.perception}`, search)
+    );
+    return sortRows(filtered, sort, sortValue);
+  }, [list, sort, search]);
+
+  function handleSort(key) {
+    setSort((current) => nextSort(current, key));
+  }
 
   const totals = useMemo(
     () =>
@@ -53,10 +108,11 @@ export default function Payslips() {
   return (
     <div className="d-flex flex-column gap-3">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 no-print">
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           <span className="text-muted small">Mois :</span>
           <MonthSelect value={mois} onChange={selectMonth} className="w-auto" highlight={archivedMonths} />
           {isArchived && <span className="badge bg-info-subtle text-info-emphasis border border-info-subtle"><i className="bi bi-archive me-1" />Déjà archivé</span>}
+          <SearchBar value={search} onChange={setSearch} />
         </div>
         <div className="d-flex gap-2">
           <Button variant="outline-primary" onClick={() => window.print()}>
@@ -83,20 +139,17 @@ export default function Payslips() {
           <table className="table sp-table mb-0 align-middle">
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Perception</th>
-                <th>Heures prestées</th>
-                <th>Delta</th>
-                <th>Salaire</th>
-                <th>Bonus</th>
-                <th>Retenue</th>
-                <th>Salaire + bonus</th>
+                {SORT_COLUMNS.map((column) => (
+                  <SortTh key={column.key} column={column} sort={sort} onSort={handleSort} />
+                ))}
                 <th className="text-end no-print">Fiche</th>
               </tr>
             </thead>
             <tbody>
-              {list.map(({ employee, hours, payslip }) => (
+              {sortedList.length === 0 && (
+                <tr><td colSpan={10} className="text-center text-muted py-4">Aucun employé trouvé</td></tr>
+              )}
+              {sortedList.map(({ employee, hours, payslip }) => (
                 <tr key={employee.id}>
                   <td className="fw-semibold">{employee.nom}</td>
                   <td>{employee.prenom}</td>
@@ -170,7 +223,7 @@ function PayslipDetail({ data, mois, settings }) {
     <div className="print-payslip p-4 border rounded-3">
       <div className="d-flex justify-content-between align-items-start mb-4">
         <div>
-          <h4 className="fw-bold mb-0">Safecheck Pay</h4>
+          <h4 className="fw-bold mb-0">SafePay</h4>
           <div className="text-muted small">Fiche de paie — {mois}</div>
         </div>
         <div className="text-end">

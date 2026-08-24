@@ -5,12 +5,54 @@ import { useMemo, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useData } from '../context/DataContext.jsx';
 import { MOIS, formatCurrency, formatHours } from '../utils/payroll';
+import { nextSort, sortRows } from '../utils/tableSort.js';
 import { PerceptionBadge, DeltaBadge } from '../components/Badges.jsx';
+import SortTh from '../components/SortTh.jsx';
+import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
+
+const SORT_COLUMNS = [
+  { key: 'nom', label: 'Nom' },
+  { key: 'prenom', label: 'Prénom' },
+  { key: 'perception', label: 'Perception' },
+  { key: 'heures', label: 'Heures prestées' },
+  { key: 'delta', label: 'Delta' },
+  { key: 'salaire', label: 'Salaire' },
+  { key: 'bonus', label: 'Bonus' },
+  { key: 'retenue', label: 'Retenue' },
+  { key: 'net', label: 'Salaire + bonus' },
+];
+
+function archiveSortValue(row, key) {
+  switch (key) {
+    case 'nom':
+      return row.nom || '';
+    case 'prenom':
+      return row.prenom || '';
+    case 'perception':
+      return row.perception || '';
+    case 'heures':
+      return row.heuresPrestees === '' || row.heuresPrestees == null ? null : Number(row.heuresPrestees);
+    case 'delta':
+      return row.delta == null ? null : Number(row.delta);
+    case 'salaire':
+      return Number(row.salaire || 0);
+    case 'bonus':
+      return Number(row.montantBonus || 0);
+    case 'retenue':
+      return Number(row.retenue || 0);
+    case 'net':
+      return Number(row.salairePlusBonus || 0);
+    default:
+      return '';
+  }
+}
 
 export default function Archive() {
   const { archive, archivedMonths, deleteArchiveMonth } = useData();
   const [filter, setFilter] = useState('all');
   const [toDelete, setToDelete] = useState(null);
+  const [sort, setSort] = useState({ key: 'nom', dir: 'asc' });
+  const [search, setSearch] = useState('');
 
   const groups = useMemo(() => {
     const byMonth = {};
@@ -22,31 +64,41 @@ export default function Archive() {
     const orderedMonths = MOIS.filter((m) => byMonth[m]);
     return orderedMonths
       .filter((m) => filter === 'all' || filter === m)
-      .map((m) => ({
-        mois: m,
-        rows: byMonth[m],
-        total: byMonth[m].reduce((s, r) => s + (r.salairePlusBonus || 0), 0),
-        archivedAt: byMonth[m][0]?.archivedAt,
-      }));
-  }, [archive, filter]);
+      .map((m) => {
+        const allRows = byMonth[m];
+        const filtered = allRows.filter((r) =>
+          matchesSearch(`${r.nom} ${r.prenom} ${r.perception} ${m}`, search)
+        );
+        return {
+          mois: m,
+          rows: sortRows(filtered, sort, archiveSortValue),
+          total: allRows.reduce((s, r) => s + (r.salairePlusBonus || 0), 0),
+          archivedAt: allRows[0]?.archivedAt,
+        };
+      })
+      .filter((g) => !search.trim() || g.rows.length > 0);
+  }, [archive, filter, sort, search]);
 
   return (
     <div className="d-flex flex-column gap-3">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           <span className="text-muted small">Filtrer :</span>
           <select className="form-select w-auto" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">Tous les mois archivés</option>
             {archivedMonths.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
+          <SearchBar value={search} onChange={setSearch} />
         </div>
         <span className="text-muted small">{archivedMonths.length} mois archivé(s) sur 12</span>
       </div>
 
       {groups.length === 0 && (
         <div className="sp-card p-5 text-center text-muted">
-          <i className="bi bi-archive fs-1 d-block mb-2" />
-          Aucun mois archivé pour le moment. Rendez-vous sur la Fiche salariale pour archiver un mois.
+          <i className={`bi ${search.trim() ? 'bi-search' : 'bi-archive'} fs-1 d-block mb-2`} />
+          {search.trim()
+            ? 'Aucun employé trouvé'
+            : 'Aucun mois archivé pour le moment. Rendez-vous sur la Fiche salariale pour archiver un mois.'}
         </div>
       )}
 
@@ -67,15 +119,14 @@ export default function Archive() {
             <table className="table sp-table mb-0">
               <thead>
                 <tr>
-                  <th>Nom</th>
-                  <th>Prénom</th>
-                  <th>Perception</th>
-                  <th>Heures prestées</th>
-                  <th>Delta</th>
-                  <th>Salaire</th>
-                  <th>Bonus</th>
-                  <th>Retenue</th>
-                  <th>Salaire + bonus</th>
+                  {SORT_COLUMNS.map((column) => (
+                    <SortTh
+                      key={column.key}
+                      column={column}
+                      sort={sort}
+                      onSort={(key) => setSort((s) => nextSort(s, key))}
+                    />
+                  ))}
                 </tr>
               </thead>
               <tbody>

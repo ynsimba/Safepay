@@ -1,4 +1,4 @@
--- Safecheck Pay — schéma MySQL (base safecheck_pay)
+-- SafePay — schéma MySQL (base safecheck_pay)
 -- À exécuter une fois (phpMyAdmin ou client mysql). Les INSERT de settings sont idempotents.
 
 SET NAMES utf8mb4;

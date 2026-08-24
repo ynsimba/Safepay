@@ -4,25 +4,25 @@
  */
 
 export const seedEmployees = [
-  { id: 'e1', nom: 'BALUMUENE', prenom: 'FRANCIS', perception: 'VB', salaireInitial: 500, compteBancaire: '35101-01237473001-75' },
-  { id: 'e2', nom: 'BEYA', prenom: 'EUNICE', perception: 'VB', salaireInitial: 400, compteBancaire: '0000101-00925030355' },
-  { id: 'e3', nom: 'BOMPELE', prenom: 'CARLA', perception: 'VB', salaireInitial: 700, compteBancaire: '0123-7445001-73' },
+  { id: 'e1', nom: 'BALUMUENE', prenom: 'FRANCIS', perception: 'VB', salaireInitial: 500, compteBancaire: '' },
+  { id: 'e2', nom: 'BEYA', prenom: 'EUNICE', perception: 'VB', salaireInitial: 400, compteBancaire: '' },
+  { id: 'e3', nom: 'BOMPELE', prenom: 'CARLA', perception: 'VB', salaireInitial: 700, compteBancaire: '' },
   { id: 'e4', nom: 'ENGANI', prenom: 'NEISSE', perception: 'CASH', salaireInitial: 600, compteBancaire: '' },
   { id: 'e5', nom: 'KANDOLO', prenom: 'NAOMIE', perception: 'CASH', salaireInitial: 650, compteBancaire: '' },
-  { id: 'e6', nom: 'LISASI', prenom: 'KASTIN', perception: 'VB', salaireInitial: 500, compteBancaire: '25130-01196715001-37' },
-  { id: 'e7', nom: 'LUTALA', prenom: 'SYLVAIN', perception: 'VB', salaireInitial: 1000, compteBancaire: '05100-01198856001-11' },
+  { id: 'e6', nom: 'LISASI', prenom: 'KASTIN', perception: 'VB', salaireInitial: 500, compteBancaire: '' },
+  { id: 'e7', nom: 'LUTALA', prenom: 'SYLVAIN', perception: 'VB', salaireInitial: 1000, compteBancaire: '' },
   { id: 'e8', nom: 'MANZINGA', prenom: 'SEBASTIEN', perception: 'CASH', salaireInitial: 800, compteBancaire: '' },
-  { id: 'e9', nom: 'MOLEKA', prenom: 'PRISCA', perception: 'VB', salaireInitial: 650, compteBancaire: '00008-01201561001-91' },
+  { id: 'e9', nom: 'MOLEKA', prenom: 'PRISCA', perception: 'VB', salaireInitial: 650, compteBancaire: '' },
   { id: 'e10', nom: 'MONYAWANGERE', prenom: 'GUSTAVE', perception: 'CASH', salaireInitial: 500, compteBancaire: '' },
-  { id: 'e11', nom: 'MULOPO', prenom: 'DESIRE', perception: 'VB', salaireInitial: 2300, compteBancaire: '95101-00236833001-28' },
+  { id: 'e11', nom: 'MULOPO', prenom: 'DESIRE', perception: 'VB', salaireInitial: 2300, compteBancaire: '' },
   { id: 'e12', nom: 'MUNGAHI', prenom: 'DJO-JOSEPH', perception: 'CASH', salaireInitial: 500, compteBancaire: '' },
-  { id: 'e13', nom: 'NDAYA', prenom: 'SARON', perception: 'VB', salaireInitial: 650, compteBancaire: '25101-01217303001-58' },
-  { id: 'e14', nom: 'NSIMBA', prenom: 'YVES', perception: 'VB', salaireInitial: 500, compteBancaire: '00003-01237688001-79' },
+  { id: 'e13', nom: 'NDAYA', prenom: 'SARON', perception: 'VB', salaireInitial: 650, compteBancaire: '' },
+  { id: 'e14', nom: 'NSIMBA', prenom: 'YVES', perception: 'VB', salaireInitial: 500, compteBancaire: '' },
   { id: 'e15', nom: 'NTUMBA', prenom: 'RAYANE', perception: 'CASH', salaireInitial: 250, compteBancaire: '' },
-  { id: 'e16', nom: 'OKONDO', prenom: 'MARIA', perception: 'VB', salaireInitial: 600, compteBancaire: '44580-800064307-23' },
+  { id: 'e16', nom: 'OKONDO', prenom: 'MARIA', perception: 'VB', salaireInitial: 600, compteBancaire: '' },
   { id: 'e17', nom: 'TSHILUMBA', prenom: 'KESTIA', perception: 'VB', salaireInitial: 800, compteBancaire: '' },
-  { id: 'e18', nom: 'TSHILUMBA', prenom: 'MICHEL', perception: 'VB', salaireInitial: 500, compteBancaire: '11000-50243100201-85' },
-  { id: 'e19', nom: 'YAFALI', prenom: 'ASHLEY', perception: 'VB', salaireInitial: 1000, compteBancaire: '45101-01193584002-10' },
+  { id: 'e18', nom: 'TSHILUMBA', prenom: 'MICHEL', perception: 'VB', salaireInitial: 500, compteBancaire: '' },
+  { id: 'e19', nom: 'YAFALI', prenom: 'ASHLEY', perception: 'VB', salaireInitial: 1000, compteBancaire: '' },
 ];
 
 // Heures prestées saisies pour Juillet (mois déjà encodé dans le fichier source).
