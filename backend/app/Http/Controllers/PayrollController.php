@@ -8,6 +8,7 @@ use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Http\Requests\UpdateSettingsRequest;
 use App\Http\Requests\UpsertHoursRequest;
+use App\Models\AuditLog;
 use App\Services\PayrollService;
 use Illuminate\Http\JsonResponse;
 
@@ -83,5 +84,18 @@ class PayrollController extends Controller
     public function reset(ResetDataRequest $request): JsonResponse
     {
         return response()->json($this->payroll->resetAllData());
+    }
+
+    public function audit(): JsonResponse
+    {
+        return response()->json([
+            'entries' => AuditLog::query()
+                ->orderByDesc('id')
+                ->limit(80)
+                ->get()
+                ->map->toFront()
+                ->values()
+                ->all(),
+        ]);
     }
 }

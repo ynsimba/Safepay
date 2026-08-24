@@ -16,6 +16,7 @@ class StoreEmployeeRequest extends FormRequest
         return [
             'nom' => ['required', 'string', 'max:100'],
             'prenom' => ['required', 'string', 'max:100'],
+            'telephone' => ['nullable', 'string', 'max:32'],
             'perception' => ['required', 'string', 'max:40'],
             'salaireInitial' => ['required', 'numeric', 'min:0', 'max:10000000'],
             'compteBancaire' => ['nullable', 'string', 'max:64'],

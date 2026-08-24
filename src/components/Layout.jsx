@@ -55,7 +55,7 @@ const PAGE_META = {
   '/fiche-salariale': { title: 'Fiche salariale', sub: 'Calcul automatique des salaires, bonus et retenues' },
   '/archive': { title: 'Suivi mensuel', sub: 'Historique archivé de tous les mois traités' },
   '/employes': { title: 'Employés', sub: 'Gestion de l\'effectif et des informations bancaires' },
-  '/parametres': { title: 'Paramètres', sub: 'Règles de calcul : heures théoriques, seuils, modes de perception' },
+  '/parametres': { title: 'Paramètres', sub: 'Règles de calcul, journal d\'activité et zone de danger' },
 };
 
 export default function Layout() {

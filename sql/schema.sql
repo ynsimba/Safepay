@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS employees (
   id VARCHAR(32) NOT NULL,
   nom VARCHAR(120) NOT NULL,
   prenom VARCHAR(120) NOT NULL,
+  telephone VARCHAR(32) NULL,
   perception VARCHAR(20) NOT NULL DEFAULT 'VB',
   salaire_initial DECIMAL(12,2) NOT NULL DEFAULT 0,
   compte_bancaire TEXT NULL,
@@ -96,5 +97,23 @@ VALUES (
   2026
 )
 ON DUPLICATE KEY UPDATE id = id;
+
+-- Journal des actions sensibles (auth, paie). Pas de mot de passe ni d'IBAN.
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NULL,
+  user_email VARCHAR(255) NULL,
+  action VARCHAR(64) NOT NULL,
+  entity VARCHAR(32) NULL,
+  entity_id VARCHAR(64) NULL,
+  ip VARCHAR(45) NULL,
+  user_agent VARCHAR(255) NULL,
+  meta JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_audit_user (user_id),
+  KEY idx_audit_created (created_at),
+  KEY idx_audit_action (action)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -57,4 +57,5 @@ export const api = {
   }),
   deleteArchiveMonth: (mois, annee) => request(`/archive/${annee}/${encodeURIComponent(mois)}`, { method: 'DELETE' }),
   resetAllData: (password) => request('/reset', { method: 'POST', body: JSON.stringify({ confirm: 'RESET', password }) }),
+  getAudit: () => request('/audit'),
 };

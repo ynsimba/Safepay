@@ -17,13 +17,11 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        User::query()->updateOrCreate(
-            ['email' => env('ADMIN_EMAIL', 'admin@safecheck.local')],
-            [
-                'name' => env('ADMIN_NAME', 'Administrateur'),
-                'password' => $password,
-                'role' => 'admin',
-            ]
-        );
+        $user = User::query()->firstOrNew(['email' => env('ADMIN_EMAIL', 'admin@safecheck.local')]);
+        $user->forceFill([
+            'name' => env('ADMIN_NAME', 'Administrateur'),
+            'password' => $password,
+            'role' => 'admin',
+        ])->save();
     }
 }

@@ -4,7 +4,46 @@
 import { useEffect, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useData } from '../context/DataContext.jsx';
+import { api } from '../api';
 import { MOIS, DEFAULT_MONTH_HOURS } from '../utils/payroll';
+
+const AUDIT_LABELS = {
+  'auth.login': 'Connexion',
+  'auth.logout': 'Déconnexion',
+  'auth.login_failed': 'Échec de connexion',
+  'auth.lockout': 'Compte verrouillé',
+  'employee.create': 'Employé créé',
+  'employee.update': 'Employé modifié',
+  'employee.delete': 'Employé supprimé',
+  'employee.bank_view': 'IBAN consulté',
+  'hours.upsert': 'Heures encodées',
+  'settings.update': 'Paramètres enregistrés',
+  'archive.create': 'Mois archivé',
+  'archive.delete': 'Archive supprimée',
+  'payroll.reset': 'Réinitialisation des données',
+};
+
+function formatAuditWhen(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function auditDetail(entry) {
+  const meta = entry.meta && typeof entry.meta === 'object' ? entry.meta : {};
+  if (entry.action === 'hours.upsert' && meta.mois) {
+    return `${meta.mois} ${meta.annee || ''}`.trim();
+  }
+  if ((entry.action === 'archive.create' || entry.action === 'archive.delete') && meta.mois) {
+    return `${meta.mois} ${meta.annee || ''}`.trim();
+  }
+  if (entry.action === 'employee.delete' && meta.nom) return meta.nom;
+  if (entry.action === 'employee.create' && (meta.nom || meta.prenom)) {
+    return `${meta.nom || ''} ${meta.prenom || ''}`.trim();
+  }
+  if (meta.iban_changed) return 'IBAN modifié';
+  if (meta.salary_changed) return 'Salaire modifié';
+  return entry.entityId || '—';
+}
 
 export default function Settings() {
   const { settings, updateSettings, resetAllData } = useData();
@@ -18,12 +57,26 @@ export default function Settings() {
   const [resetPassword, setResetPassword] = useState('');
   const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
+  const [audit, setAudit] = useState([]);
+  const [auditError, setAuditError] = useState('');
 
   useEffect(() => {
     // Resynchronise le formulaire après un reset ou un rechargement MySQL.
     setMonthHours(settings.monthHours);
     setThreshold(settings.threshold);
     setPerceptions(settings.perceptions || ['VB', 'CASH']);
+  }, [settings]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getAudit()
+      .then((data) => {
+        if (!cancelled) setAudit(Array.isArray(data.entries) ? data.entries : []);
+      })
+      .catch((err) => {
+        if (!cancelled) setAuditError(err.message || 'Journal indisponible.');
+      });
+    return () => { cancelled = true; };
   }, [settings]);
 
   function handleHourChange(mois, value) {
@@ -123,6 +176,41 @@ export default function Settings() {
         <div className="input-group" style={{ maxWidth: 280 }}>
           <input className="form-control" placeholder="Nouveau mode (ex: MOBILE MONEY)" value={newPerception} onChange={(e) => setNewPerception(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addPerception()} />
           <Button variant="outline-secondary" onClick={addPerception}><i className="bi bi-plus-lg" /></Button>
+        </div>
+      </div>
+
+      <div className="sp-card p-3">
+        <h6 className="fw-bold mb-1">Journal d'activité</h6>
+        <p className="text-muted small mb-3">
+          Dernières actions sensibles (connexion, employés, heures, archives, reset). Les mots de passe et IBAN ne sont jamais enregistrés.
+        </p>
+        {auditError && <div className="alert alert-danger py-2">{auditError}</div>}
+        <div className="table-responsive" style={{ maxHeight: 320, overflowY: 'auto' }}>
+          <table className="table sp-table mb-0">
+            <thead>
+              <tr>
+                <th>Quand</th>
+                <th>Action</th>
+                <th>Compte</th>
+                <th>Détail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {audit.length === 0 && !auditError && (
+                <tr>
+                  <td colSpan={4} className="text-center text-muted py-4">Aucune entrée pour le moment</td>
+                </tr>
+              )}
+              {audit.map((entry) => (
+                <tr key={entry.id}>
+                  <td className="text-muted small">{formatAuditWhen(entry.createdAt)}</td>
+                  <td>{AUDIT_LABELS[entry.action] || entry.action}</td>
+                  <td className="small">{entry.userEmail || '—'}</td>
+                  <td className="small text-muted">{auditDetail(entry)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

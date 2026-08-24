@@ -16,7 +16,7 @@ class Employee extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id', 'nom', 'prenom', 'perception', 'salaire_initial', 'compte_bancaire',
+        'id', 'nom', 'prenom', 'telephone', 'perception', 'salaire_initial', 'compte_bancaire',
     ];
 
     protected function casts(): array
@@ -73,6 +73,7 @@ class Employee extends Model
             'id' => $this->id,
             'nom' => $this->nom,
             'prenom' => $this->prenom,
+            'telephone' => $this->telephone ?? '',
             'perception' => $this->perception,
             'salaireInitial' => (float) $this->salaire_initial,
             'compteBancaire' => $includeFullBankAccount ? $iban : BankAccount::mask($iban),

@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/current-month', [PayrollController::class, 'setCurrentMonth']);
         Route::post('/archive', [PayrollController::class, 'archive']);
         Route::delete('/archive/{annee}/{mois}', [PayrollController::class, 'destroyArchive']);
+        Route::get('/audit', [PayrollController::class, 'audit']);
         Route::post('/reset', [PayrollController::class, 'reset'])->middleware('throttle:3,10');
     });
 });

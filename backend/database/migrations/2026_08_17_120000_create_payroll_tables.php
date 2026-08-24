@@ -15,6 +15,7 @@ return new class extends Migration
                 $table->string('id', 32)->primary();
                 $table->string('nom', 120);
                 $table->string('prenom', 120);
+                $table->string('telephone', 32)->nullable();
                 $table->string('perception', 20)->default('VB');
                 $table->decimal('salaire_initial', 12, 2)->default(0);
                 $table->text('compte_bancaire')->nullable();

@@ -12,11 +12,12 @@ import SortTh from '../components/SortTh.jsx';
 import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
 import { api } from '../api';
 
-const EMPTY_FORM = { nom: '', prenom: '', perception: 'VB', salaireInitial: '', compteBancaire: '', salaireFromMois: '' };
+const EMPTY_FORM = { nom: '', prenom: '', telephone: '', perception: 'VB', salaireInitial: '', compteBancaire: '', salaireFromMois: '' };
 
 const SORT_COLUMNS = [
   { key: 'nom', label: 'Nom' },
   { key: 'prenom', label: 'Prénom' },
+  { key: 'telephone', label: 'Téléphone' },
   { key: 'perception', label: 'Perception' },
   { key: 'salaire', label: 'Salaire initial' },
   { key: 'compte', label: 'Compte bancaire' },
@@ -28,6 +29,8 @@ function employeeSortValue(emp, key) {
       return emp.nom || '';
     case 'prenom':
       return emp.prenom || '';
+    case 'telephone':
+      return emp.telephone || '';
     case 'perception':
       return emp.perception || '';
     case 'salaire':
@@ -56,7 +59,7 @@ export default function Employees() {
     const q = search.trim().toLowerCase();
     if (!q) return employees;
     return employees.filter((e) =>
-      matchesSearch(`${e.nom} ${e.prenom} ${e.perception}`, q)
+      matchesSearch(`${e.nom} ${e.prenom} ${e.telephone || ''} ${e.perception}`, q)
     );
   }, [employees, search]);
 
@@ -83,6 +86,7 @@ export default function Employees() {
     setForm({
       nom: emp.nom,
       prenom: emp.prenom,
+      telephone: emp.telephone || '',
       perception: emp.perception,
       salaireInitial: emp.salaireInitial,
       compteBancaire: '',
@@ -115,6 +119,7 @@ export default function Employees() {
     const payload = {
       nom: form.nom.trim().toUpperCase(),
       prenom: form.prenom.trim().toUpperCase(),
+      telephone: form.telephone.trim(),
       perception: form.perception,
       salaireInitial: Number(form.salaireInitial),
       compteBancaire: form.compteBancaire.trim(),
@@ -152,12 +157,13 @@ export default function Employees() {
             </thead>
             <tbody>
               {sorted.length === 0 && (
-                <tr><td colSpan={6} className="text-center text-muted py-4">Aucun employé trouvé</td></tr>
+                <tr><td colSpan={7} className="text-center text-muted py-4">Aucun employé trouvé</td></tr>
               )}
               {sorted.map((emp) => (
                 <tr key={emp.id}>
                   <td className="fw-semibold">{emp.nom}</td>
                   <td>{emp.prenom}</td>
+                  <td className="text-muted small">{emp.telephone || '—'}</td>
                   <td><PerceptionBadge value={emp.perception} /></td>
                   <td>
                     {formatCurrency(emp.salaireInitial)}
@@ -198,6 +204,18 @@ export default function Employees() {
               <label className="form-label small fw-semibold">Prénom</label>
               <input className={`form-control ${errors.prenom ? 'is-invalid' : ''}`} value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} />
               {errors.prenom && <div className="invalid-feedback">{errors.prenom}</div>}
+            </div>
+            <div className="col-6">
+              <label className="form-label small fw-semibold">Téléphone (optionnel)</label>
+              <input
+                className="form-control"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={form.telephone}
+                onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                placeholder="ex: +243 810 000 000"
+              />
             </div>
             <div className="col-6">
               <label className="form-label small fw-semibold">Moyen de perception</label>

@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Hour;
 use App\Models\SalaryHistory;
 use App\Models\Setting;
+use App\Support\AuditLogger;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -115,6 +116,8 @@ class PayrollService
             abort(404);
         }
 
+        AuditLogger::record('employee.bank_view', 'employee', $id);
+
         return $employee->toFront(includeFullBankAccount: true);
     }
 
@@ -125,9 +128,14 @@ class PayrollService
             'id' => $id,
             'nom' => trim((string) ($body['nom'] ?? '')),
             'prenom' => trim((string) ($body['prenom'] ?? '')),
+            'telephone' => trim((string) ($body['telephone'] ?? '')) ?: null,
             'perception' => $body['perception'] ?? 'VB',
             'salaire_initial' => (float) ($body['salaireInitial'] ?? 0),
             'compte_bancaire' => trim((string) ($body['compteBancaire'] ?? '')) ?: null,
+        ]);
+        AuditLogger::record('employee.create', 'employee', $id, [
+            'nom' => trim((string) ($body['nom'] ?? '')),
+            'prenom' => trim((string) ($body['prenom'] ?? '')),
         ]);
 
         return $this->getState();
@@ -136,9 +144,15 @@ class PayrollService
     public function updateEmployee(string $id, array $body): array
     {
         $employee = Employee::query()->findOrFail($id);
+        $ibanChanged = array_key_exists('compteBancaire', $body);
+        $salaryChanged = array_key_exists('salaireInitial', $body)
+            && (float) $body['salaireInitial'] !== (float) $employee->salaire_initial;
         $employee->update([
             'nom' => trim((string) ($body['nom'] ?? $employee->nom)),
             'prenom' => trim((string) ($body['prenom'] ?? $employee->prenom)),
+            'telephone' => array_key_exists('telephone', $body)
+                ? (trim((string) $body['telephone']) ?: null)
+                : $employee->telephone,
             'perception' => $body['perception'] ?? $employee->perception,
             'salaire_initial' => (float) ($body['salaireInitial'] ?? $employee->salaire_initial),
             'compte_bancaire' => array_key_exists('compteBancaire', $body)
@@ -148,13 +162,20 @@ class PayrollService
         if (array_key_exists('salaireHistory', $body)) {
             $this->replaceSalaryHistory($id, is_array($body['salaireHistory']) ? $body['salaireHistory'] : []);
         }
+        AuditLogger::record('employee.update', 'employee', $id, [
+            'iban_changed' => $ibanChanged,
+            'salary_changed' => $salaryChanged || array_key_exists('salaireHistory', $body),
+        ]);
 
         return $this->getState();
     }
 
     public function deleteEmployee(string $id): array
     {
-        Employee::query()->findOrFail($id)->delete();
+        $employee = Employee::query()->findOrFail($id);
+        $label = trim($employee->nom.' '.$employee->prenom);
+        $employee->delete();
+        AuditLogger::record('employee.delete', 'employee', $id, ['nom' => $label]);
 
         return $this->getState();
     }
@@ -176,6 +197,10 @@ class PayrollService
                 'bonus_horaire' => ($bonus === '' || $bonus === null) ? 0 : (float) $bonus,
             ]
         );
+        AuditLogger::record('hours.upsert', 'hours', $employeeId, [
+            'mois' => $mois,
+            'annee' => $annee,
+        ]);
 
         return $this->getState();
     }
@@ -188,6 +213,7 @@ class PayrollService
             'perceptions' => $body['perceptions'] ?? $setting->perceptions,
             'month_hours' => $body['monthHours'] ?? $setting->month_hours,
         ]);
+        AuditLogger::record('settings.update', 'settings', '1');
 
         return $this->getState();
     }
@@ -249,12 +275,21 @@ class PayrollService
             }
         });
 
+        AuditLogger::record('archive.create', 'archive', $annee.'-'.$mois, [
+            'mois' => $mois,
+            'annee' => $annee,
+        ]);
+
         return $this->getState();
     }
 
     public function deleteArchiveMonth(string $mois, int $annee): array
     {
         Archive::query()->where('mois', $mois)->where('annee', $annee)->delete();
+        AuditLogger::record('archive.delete', 'archive', $annee.'-'.$mois, [
+            'mois' => $mois,
+            'annee' => $annee,
+        ]);
 
         return $this->getState();
     }
@@ -262,6 +297,7 @@ class PayrollService
     public function resetAllData(): array
     {
         $this->seedDatabase();
+        AuditLogger::record('payroll.reset', 'payroll', null);
 
         return $this->getState();
     }
@@ -291,6 +327,7 @@ class PayrollService
                     'id' => $emp['id'],
                     'nom' => $emp['nom'],
                     'prenom' => $emp['prenom'],
+                    'telephone' => $emp['telephone'] ?? null,
                     'perception' => $emp['perception'],
                     'salaire_initial' => $emp['salaireInitial'],
                     'compte_bancaire' => $emp['compteBancaire'] ?: null,
