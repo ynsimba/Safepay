@@ -11,6 +11,56 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const LARAVEL_HOST = '127.0.0.1'
 const LARAVEL_PORT = 8001
 
+const PROD_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data:",
+  "connect-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join('; ')
+
+const DEV_CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data:",
+  "connect-src 'self' ws://localhost:5173 ws://127.0.0.1:5173",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join('; ')
+
+const SECURITY_HEADERS = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+}
+
+/** Injecte une CSP stricte dans index.html au build (pas en `vite dev`). */
+function htmlCspPlugin() {
+  return {
+    name: 'html-csp-prod',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        if (ctx.server) return html
+        return html.replace(
+          '<meta name="referrer" content="strict-origin-when-cross-origin" />',
+          `<meta http-equiv="Content-Security-Policy" content="${PROD_CSP}" />\n    <meta name="referrer" content="strict-origin-when-cross-origin" />`,
+        )
+      },
+    },
+  }
+}
+
 /** Démarre `php artisan serve` pendant `npm run dev`. */
 function laravelApiPlugin() {
   let child = null
@@ -50,31 +100,25 @@ function laravelApiPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), laravelApiPlugin()],
+  plugins: [react(), laravelApiPlugin(), htmlCspPlugin()],
   server: {
     headers: {
-      'X-Frame-Options': 'DENY',
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-      'Content-Security-Policy': [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data:",
-        "connect-src 'self' ws://localhost:5173 ws://127.0.0.1:5173",
-        "frame-ancestors 'none'",
-        "base-uri 'self'",
-        "form-action 'self'",
-        "object-src 'none'",
-      ].join('; '),
+      ...SECURITY_HEADERS,
+      'Content-Security-Policy': DEV_CSP,
     },
     proxy: {
       '/api': {
         target: `http://${LARAVEL_HOST}:${LARAVEL_PORT}`,
         changeOrigin: true,
       },
+    },
+  },
+  preview: {
+    headers: {
+      ...SECURITY_HEADERS,
+      'Content-Security-Policy': PROD_CSP,
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      'Cross-Origin-Opener-Policy': 'same-origin',
     },
   },
 })

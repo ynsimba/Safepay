@@ -17,7 +17,7 @@ return new class extends Migration
                 $table->string('prenom', 120);
                 $table->string('perception', 20)->default('VB');
                 $table->decimal('salaire_initial', 12, 2)->default(0);
-                $table->string('compte_bancaire', 80)->nullable();
+                $table->text('compte_bancaire')->nullable();
                 $table->timestamps();
             });
         }

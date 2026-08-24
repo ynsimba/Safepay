@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS employees (
   prenom VARCHAR(120) NOT NULL,
   perception VARCHAR(20) NOT NULL DEFAULT 'VB',
   salaire_initial DECIMAL(12,2) NOT NULL DEFAULT 0,
-  compte_bancaire VARCHAR(80) NULL,
+  compte_bancaire TEXT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
@@ -35,11 +35,12 @@ CREATE TABLE IF NOT EXISTS hours (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   employee_id VARCHAR(32) NOT NULL,
   mois VARCHAR(20) NOT NULL,
+  annee SMALLINT UNSIGNED NOT NULL DEFAULT 2026,
   heures_prestees DECIMAL(8,2) NULL,
   bonus_horaire DECIMAL(8,2) NOT NULL DEFAULT 0,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uniq_employee_mois (employee_id, mois),
+  UNIQUE KEY uniq_employee_mois_annee (employee_id, mois, annee),
   CONSTRAINT fk_hours_employee
     FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -48,6 +49,7 @@ CREATE TABLE IF NOT EXISTS hours (
 CREATE TABLE IF NOT EXISTS archives (
   id VARCHAR(64) NOT NULL,
   mois VARCHAR(20) NOT NULL,
+  annee SMALLINT UNSIGNED NOT NULL DEFAULT 2026,
   employee_id VARCHAR(32) NOT NULL,
   nom VARCHAR(120) NOT NULL,
   prenom VARCHAR(120) NOT NULL,
@@ -63,22 +65,24 @@ CREATE TABLE IF NOT EXISTS archives (
   archived_at DATETIME NOT NULL,
   PRIMARY KEY (id),
   KEY idx_archives_mois (mois),
+  KEY idx_archives_annee_mois (annee, mois),
   KEY idx_archives_employee (employee_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Une seule ligne (id = 1) : règles de calcul et mois courant.
+-- Une seule ligne (id = 1) : règles de calcul et période courante.
 CREATE TABLE IF NOT EXISTS settings (
   id TINYINT UNSIGNED NOT NULL,
   threshold DECIMAL(8,2) NOT NULL DEFAULT 0,
   perceptions JSON NOT NULL,
   month_hours JSON NOT NULL,
   current_month VARCHAR(20) NOT NULL DEFAULT 'Juillet',
+  current_year SMALLINT UNSIGNED NOT NULL DEFAULT 2026,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Valeurs d'usine : seuil 0, VB/CASH, 186 h / 179,2 h selon la longueur du mois.
-INSERT INTO settings (id, threshold, perceptions, month_hours, current_month)
+INSERT INTO settings (id, threshold, perceptions, month_hours, current_month, current_year)
 VALUES (
   1,
   0,
@@ -88,7 +92,8 @@ VALUES (
     'Mai', 186, 'Juin', 179.2, 'Juillet', 186, 'Août', 186,
     'Septembre', 179.2, 'Octobre', 186, 'Novembre', 179.2, 'Décembre', 186
   ),
-  'Juillet'
+  'Juillet',
+  2026
 )
 ON DUPLICATE KEY UPDATE id = id;
 

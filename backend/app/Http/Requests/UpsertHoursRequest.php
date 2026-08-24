@@ -27,6 +27,7 @@ class UpsertHoursRequest extends FormRequest
     {
         return [
             'mois' => ['required', 'string', Rule::in(PayrollService::MOIS)],
+            'annee' => ['sometimes', 'integer', 'min:2000', 'max:2100'],
             'employeeId' => ['required', 'string', 'max:64', 'exists:employees,id'],
             'heuresPrestees' => ['nullable', 'numeric', 'min:0', 'max:744'],
             'bonusHoraire' => ['nullable', 'numeric', 'min:0', 'max:744'],

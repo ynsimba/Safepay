@@ -24,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureUserIsAdmin::class,
         ]);
 
+        $middleware->web(append: [
+            SecurityHeaders::class,
+        ]);
+
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
             EncryptCookies::class,

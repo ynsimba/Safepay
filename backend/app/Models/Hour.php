@@ -10,13 +10,14 @@ class Hour extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['employee_id', 'mois', 'heures_prestees', 'bonus_horaire'];
+    protected $fillable = ['employee_id', 'mois', 'annee', 'heures_prestees', 'bonus_horaire'];
 
     protected function casts(): array
     {
         return [
             'heures_prestees' => 'float',
             'bonus_horaire' => 'float',
+            'annee' => 'integer',
         ];
     }
 

@@ -130,6 +130,58 @@ export function computePayslip({ salaireInitial, heuresPrestees, bonusHoraire, m
   };
 }
 
+/** Libellé « Juillet 2026 ». */
+export function formatPeriod(mois, annee) {
+  if (!mois) return '—';
+  return annee ? `${mois} ${annee}` : mois;
+}
+
+/** Année d'une ligne d'archive (colonne, id `2026-Juillet-e1`, sinon date). */
+export function archiveYear(row) {
+  const y = Number(row?.annee);
+  if (Number.isFinite(y) && y >= 2000) return y;
+  if (typeof row?.id === 'string') {
+    const fromId = Number(row.id.slice(0, 4));
+    if (Number.isFinite(fromId) && fromId >= 2000 && row.id[4] === '-') return fromId;
+  }
+  if (row?.archivedAt) {
+    const fromDate = new Date(row.archivedAt).getFullYear();
+    if (Number.isFinite(fromDate) && fromDate >= 2000) return fromDate;
+  }
+  return null;
+}
+
+/** Dernière période figée dans le suivi (année puis mois). */
+export function latestArchivedPeriod(archive = []) {
+  let best = null;
+  archive.forEach((row) => {
+    const year = archiveYear(row);
+    const idx = MOIS.indexOf(row?.mois);
+    if (!year || idx < 0) return;
+    if (
+      !best
+      || year > best.annee
+      || (year === best.annee && idx > MOIS.indexOf(best.mois))
+    ) {
+      best = { mois: row.mois, annee: year };
+    }
+  });
+  return best;
+}
+
+/** Années proposées : données d'archive + année courante + année suivante. */
+export function availableYears(archive = [], currentYear) {
+  const now = new Date().getFullYear();
+  const years = new Set([now, now + 1]);
+  const current = Number(currentYear);
+  if (current) years.add(current);
+  archive.forEach((row) => {
+    const year = archiveYear(row);
+    if (year) years.add(year);
+  });
+  return [...years].sort((a, b) => b - a);
+}
+
 /** Montant en dollars, format français (ex. 1 230,50 $). */
 export function formatCurrency(value) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';

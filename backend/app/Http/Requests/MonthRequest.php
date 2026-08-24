@@ -17,6 +17,7 @@ class MonthRequest extends FormRequest
     {
         return [
             'mois' => ['required', 'string', Rule::in(PayrollService::MOIS)],
+            'annee' => ['sometimes', 'integer', 'min:2000', 'max:2100'],
         ];
     }
 }

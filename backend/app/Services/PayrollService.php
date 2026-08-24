@@ -25,11 +25,12 @@ class PayrollService
         $setting = Setting::current();
 
         return [
-            'employees' => Employee::query()->with('salaryHistory')->orderBy('nom')->orderBy('prenom')->get()->map->toFront()->values()->all(),
+            'employees' => Employee::query()->with('salaryHistory')->orderBy('nom')->orderBy('prenom')->get()->map(fn (Employee $e) => $e->toFront())->values()->all(),
             'hoursByMonth' => $this->hoursByMonth(),
-            'archive' => Archive::query()->orderBy('mois')->orderBy('nom')->orderBy('prenom')->get()->map->toFront()->values()->all(),
+            'archive' => Archive::query()->orderBy('annee')->orderBy('mois')->orderBy('nom')->orderBy('prenom')->get()->map->toFront()->values()->all(),
             'settings' => $setting->toFront(),
             'currentMonth' => $setting->current_month,
+            'currentYear' => (int) $setting->current_year,
         ];
     }
 
@@ -107,6 +108,16 @@ class PayrollService
         ];
     }
 
+    public function showEmployee(string $id): array
+    {
+        $employee = Employee::query()->with('salaryHistory')->find($id);
+        if (! $employee) {
+            abort(404);
+        }
+
+        return $employee->toFront(includeFullBankAccount: true);
+    }
+
     public function addEmployee(array $body): array
     {
         $id = 'e'.bin2hex(random_bytes(8));
@@ -157,8 +168,9 @@ class PayrollService
         }
         $heures = $body['heuresPrestees'] ?? '';
         $bonus = $body['bonusHoraire'] ?? 0;
+        $annee = (int) ($body['annee'] ?? Setting::current()->current_year);
         Hour::query()->updateOrCreate(
-            ['employee_id' => $employeeId, 'mois' => $mois],
+            ['employee_id' => $employeeId, 'mois' => $mois, 'annee' => $annee],
             [
                 'heures_prestees' => ($heures === '' || $heures === null) ? null : (float) $heures,
                 'bonus_horaire' => ($bonus === '' || $bonus === null) ? 0 : (float) $bonus,
@@ -180,28 +192,33 @@ class PayrollService
         return $this->getState();
     }
 
-    public function setCurrentMonth(string $mois): array
+    public function setCurrentMonth(string $mois, ?int $annee = null): array
     {
         if ($mois === '') {
             abort(response()->json(['error' => 'Mois requis'], 422));
         }
-        Setting::current()->update(['current_month' => $mois]);
+        $payload = ['current_month' => $mois];
+        if ($annee !== null) {
+            $payload['current_year'] = $annee;
+        }
+        Setting::current()->update($payload);
 
         return $this->getState();
     }
 
-    public function archiveMonth(string $mois): array
+    public function archiveMonth(string $mois, ?int $annee = null): array
     {
         if ($mois === '') {
             abort(response()->json(['error' => 'Mois requis'], 422));
         }
+        $annee ??= (int) Setting::current()->current_year;
         $state = $this->getState();
         $settings = $state['settings'];
         $byEmp = $state['hoursByMonth'][$mois] ?? [];
         $now = now();
 
-        DB::transaction(function () use ($mois, $state, $settings, $byEmp, $now) {
-            Archive::query()->where('mois', $mois)->delete();
+        DB::transaction(function () use ($mois, $annee, $state, $settings, $byEmp, $now) {
+            Archive::query()->where('mois', $mois)->where('annee', $annee)->delete();
             foreach ($state['employees'] as $emp) {
                 $hours = $byEmp[$emp['id']] ?? ['heuresPrestees' => '', 'bonusHoraire' => 0];
                 $payslip = $this->computePayslip([
@@ -212,8 +229,9 @@ class PayrollService
                     'settings' => $settings,
                 ]);
                 Archive::query()->create([
-                    'id' => $mois.'-'.$emp['id'],
+                    'id' => $annee.'-'.$mois.'-'.$emp['id'],
                     'mois' => $mois,
+                    'annee' => $annee,
                     'employee_id' => $emp['id'],
                     'nom' => $emp['nom'],
                     'prenom' => $emp['prenom'],
@@ -234,9 +252,9 @@ class PayrollService
         return $this->getState();
     }
 
-    public function deleteArchiveMonth(string $mois): array
+    public function deleteArchiveMonth(string $mois, int $annee): array
     {
-        Archive::query()->where('mois', $mois)->delete();
+        Archive::query()->where('mois', $mois)->where('annee', $annee)->delete();
 
         return $this->getState();
     }
@@ -283,6 +301,7 @@ class PayrollService
                 Hour::query()->create([
                     'employee_id' => $id,
                     'mois' => 'Juillet',
+                    'annee' => 2026,
                     'heures_prestees' => $h['heuresPrestees'],
                     'bonus_horaire' => $h['bonusHoraire'],
                 ]);
@@ -299,8 +318,9 @@ class PayrollService
                     'settings' => $settings,
                 ]);
                 Archive::query()->create([
-                    'id' => 'Juillet-'.$emp['id'],
+                    'id' => '2026-Juillet-'.$emp['id'],
                     'mois' => 'Juillet',
+                    'annee' => 2026,
                     'employee_id' => $emp['id'],
                     'nom' => $emp['nom'],
                     'prenom' => $emp['prenom'],
@@ -317,14 +337,15 @@ class PayrollService
                 ]);
             }
 
-            Setting::current()->update(['current_month' => 'Juillet']);
+            Setting::current()->update(['current_month' => 'Juillet', 'current_year' => 2026]);
         });
     }
 
     private function hoursByMonth(): array
     {
+        $year = (int) Setting::current()->current_year;
         $hoursByMonth = [];
-        foreach (Hour::query()->get() as $row) {
+        foreach (Hour::query()->where('annee', $year)->get() as $row) {
             $hoursByMonth[$row->mois][$row->employee_id] = [
                 'heuresPrestees' => $row->heures_prestees === null ? '' : (float) $row->heures_prestees,
                 'bonusHoraire' => (float) $row->bonus_horaire,

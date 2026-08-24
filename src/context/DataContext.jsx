@@ -4,7 +4,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
-import { DEFAULT_SETTINGS, MOIS, computePayslip, salaireForMonth } from '../utils/payroll';
+import { DEFAULT_SETTINGS, MOIS, archiveYear, computePayslip, salaireForMonth } from '../utils/payroll';
 
 /** État vide affiché le temps du premier GET /state. */
 const EMPTY_STATE = {
@@ -13,6 +13,7 @@ const EMPTY_STATE = {
   archive: [],
   settings: DEFAULT_SETTINGS,
   currentMonth: 'Juillet',
+  currentYear: new Date().getFullYear(),
 };
 
 /** Délai avant d'envoyer une saisie d'heures (évite une requête à chaque frappe). */
@@ -27,6 +28,8 @@ export function DataProvider({ children }) {
   const [saveError, setSaveError] = useState(null);
   const hoursTimers = useRef({});
   const hoursDraft = useRef({});
+  const yearRef = useRef(state.currentYear);
+  yearRef.current = state.currentYear;
 
   /** Remplace l'état local par la réponse serveur (forme camelCase du front). */
   const applyState = useCallback((next) => {
@@ -107,6 +110,7 @@ export function DataProvider({ children }) {
       api.setHours({
         mois,
         employeeId,
+        annee: yearRef.current,
         heuresPrestees: snapshot.heuresPrestees,
         bonusHoraire: snapshot.bonusHoraire === '' || snapshot.bonusHoraire == null ? 0 : snapshot.bonusHoraire,
       }).then((next) => {
@@ -135,9 +139,14 @@ export function DataProvider({ children }) {
     }, HOURS_DEBOUNCE_MS);
   }, []);
 
-  const setCurrentMonth = useCallback((mois) => {
-    setState((s) => ({ ...s, currentMonth: mois }));
-    run(() => api.setCurrentMonth(mois)).catch(() => {});
+  const setCurrentMonth = useCallback((mois, annee) => {
+    const year = annee ?? yearRef.current;
+    setState((s) => ({
+      ...s,
+      currentMonth: mois,
+      currentYear: year ?? s.currentYear,
+    }));
+    run(() => api.setCurrentMonth(mois, year)).catch(() => {});
   }, [run]);
 
   const updateSettings = useCallback((patch) => run(() => api.updateSettings(patch)), [run]);
@@ -161,16 +170,19 @@ export function DataProvider({ children }) {
     [state.employees, state.hoursByMonth, state.settings]
   );
 
-  const archiveMonth = useCallback((mois) => run(() => api.archiveMonth(mois)), [run]);
+  const archiveMonth = useCallback((mois, annee) => run(() => api.archiveMonth(mois, annee)), [run]);
 
-  const deleteArchiveMonth = useCallback((mois) => run(() => api.deleteArchiveMonth(mois)), [run]);
+  const deleteArchiveMonth = useCallback((mois, annee) => run(() => api.deleteArchiveMonth(mois, annee)), [run]);
 
   const archivedMonths = useMemo(() => {
-    const set = new Set(state.archive.map((a) => a.mois));
+    const year = Number(state.currentYear);
+    const set = new Set(
+      state.archive.filter((a) => archiveYear(a) === year).map((a) => a.mois)
+    );
     return MOIS.filter((m) => set.has(m));
-  }, [state.archive]);
+  }, [state.archive, state.currentYear]);
 
-  const resetAllData = useCallback(() => run(() => api.resetAllData()), [run]);
+  const resetAllData = useCallback((password) => run(() => api.resetAllData(password)), [run]);
 
   const value = useMemo(
     () => ({

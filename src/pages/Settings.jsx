@@ -15,6 +15,8 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetPhrase, setResetPhrase] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetError, setResetError] = useState('');
   const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
@@ -134,7 +136,7 @@ export default function Settings() {
 
       <Modal
         show={confirmReset}
-        onHide={() => { setConfirmReset(false); setResetPhrase(''); }}
+        onHide={() => { setConfirmReset(false); setResetPhrase(''); setResetPassword(''); setResetError(''); }}
         centered
       >
         <Modal.Header closeButton>
@@ -149,23 +151,39 @@ export default function Settings() {
           </label>
           <input
             id="reset-confirm"
-            className="form-control"
+            className="form-control mb-3"
             value={resetPhrase}
             onChange={(e) => setResetPhrase(e.target.value)}
             autoComplete="off"
           />
+          <label className="form-label small fw-semibold" htmlFor="reset-password">
+            Mot de passe du compte
+          </label>
+          <input
+            id="reset-password"
+            type="password"
+            className={`form-control ${resetError ? 'is-invalid' : ''}`}
+            value={resetPassword}
+            onChange={(e) => { setResetPassword(e.target.value); setResetError(''); }}
+            autoComplete="current-password"
+          />
+          {resetError && <div className="invalid-feedback d-block">{resetError}</div>}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="light" onClick={() => { setConfirmReset(false); setResetPhrase(''); }}>Annuler</Button>
+          <Button variant="light" onClick={() => { setConfirmReset(false); setResetPhrase(''); setResetPassword(''); setResetError(''); }}>Annuler</Button>
           <Button
             variant="danger"
-            disabled={resetPhrase !== 'RESET' || resetting}
+            disabled={resetPhrase !== 'RESET' || !resetPassword || resetting}
             onClick={async () => {
               setResetting(true);
+              setResetError('');
               try {
-                await resetAllData();
+                await resetAllData(resetPassword);
                 setConfirmReset(false);
                 setResetPhrase('');
+                setResetPassword('');
+              } catch (err) {
+                setResetError(err.message || 'Réinitialisation impossible.');
               } finally {
                 setResetting(false);
               }

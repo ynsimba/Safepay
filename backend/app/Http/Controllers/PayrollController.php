@@ -21,6 +21,11 @@ class PayrollController extends Controller
         return response()->json($this->payroll->getState());
     }
 
+    public function showEmployee(string $id): JsonResponse
+    {
+        return response()->json($this->payroll->showEmployee($id));
+    }
+
     public function storeEmployee(StoreEmployeeRequest $request): JsonResponse
     {
         return response()->json($this->payroll->addEmployee($request->validated()));
@@ -48,21 +53,31 @@ class PayrollController extends Controller
 
     public function setCurrentMonth(MonthRequest $request): JsonResponse
     {
-        return response()->json($this->payroll->setCurrentMonth((string) $request->validated('mois')));
+        $annee = $request->validated('annee');
+
+        return response()->json($this->payroll->setCurrentMonth(
+            (string) $request->validated('mois'),
+            $annee !== null ? (int) $annee : null
+        ));
     }
 
     public function archive(MonthRequest $request): JsonResponse
     {
-        return response()->json($this->payroll->archiveMonth((string) $request->validated('mois')));
+        $annee = $request->validated('annee');
+
+        return response()->json($this->payroll->archiveMonth(
+            (string) $request->validated('mois'),
+            $annee !== null ? (int) $annee : null
+        ));
     }
 
-    public function destroyArchive(string $mois): JsonResponse
+    public function destroyArchive(string $annee, string $mois): JsonResponse
     {
-        if (! in_array($mois, PayrollService::MOIS, true)) {
+        if (! ctype_digit($annee) || ! in_array($mois, PayrollService::MOIS, true)) {
             abort(404);
         }
 
-        return response()->json($this->payroll->deleteArchiveMonth($mois));
+        return response()->json($this->payroll->deleteArchiveMonth($mois, (int) $annee));
     }
 
     public function reset(ResetDataRequest $request): JsonResponse

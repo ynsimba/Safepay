@@ -4,9 +4,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { useData } from '../context/DataContext.jsx';
-import { formatCurrency, formatHours, heuresTheoriques, salaireForMonth } from '../utils/payroll';
+import { formatCurrency, formatHours, heuresTheoriques, salaireForMonth, availableYears, formatPeriod } from '../utils/payroll';
 import { nextSort, sortRows } from '../utils/tableSort.js';
 import MonthSelect from '../components/MonthSelect.jsx';
+import YearSelect from '../components/YearSelect.jsx';
 import { PerceptionBadge, DeltaBadge } from '../components/Badges.jsx';
 import SortTh from '../components/SortTh.jsx';
 import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
@@ -51,17 +52,34 @@ function sortValue(row, key) {
 }
 
 export default function Payslips() {
-  const { getPayslips, archiveMonth, currentMonth, setCurrentMonth, archivedMonths, settings } = useData();
+  const { getPayslips, archiveMonth, currentMonth, currentYear, setCurrentMonth, archivedMonths, settings, archive } = useData();
   const [mois, setMois] = useState(currentMonth);
+  const [annee, setAnnee] = useState(currentYear);
+  const [periodTouched, setPeriodTouched] = useState(false);
   const [selected, setSelected] = useState(null);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archived, setArchived] = useState(false);
   const [sort, setSort] = useState({ key: 'nom', dir: 'asc' });
   const [search, setSearch] = useState('');
+  const years = useMemo(() => availableYears(archive, currentYear), [archive, currentYear]);
+
+  useEffect(() => {
+    if (periodTouched) return;
+    setMois(currentMonth);
+    setAnnee(currentYear);
+  }, [currentMonth, currentYear, periodTouched]);
 
   function selectMonth(m) {
+    setPeriodTouched(true);
     setMois(m);
-    setCurrentMonth(m);
+    setCurrentMonth(m, annee);
+    setArchived(false);
+  }
+
+  function selectYear(y) {
+    setPeriodTouched(true);
+    setAnnee(y);
+    setCurrentMonth(mois, y);
     setArchived(false);
   }
 
@@ -98,7 +116,7 @@ export default function Payslips() {
   }, [selected]);
 
   function handleArchive() {
-    archiveMonth(mois);
+    archiveMonth(mois, annee);
     setConfirmArchive(false);
     setArchived(true);
   }
@@ -109,7 +127,8 @@ export default function Payslips() {
     <div className="d-flex flex-column gap-3">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 no-print">
         <div className="d-flex align-items-center gap-2 flex-wrap">
-          <span className="text-muted small">Mois :</span>
+          <span className="text-muted small">Période :</span>
+          <YearSelect value={annee} onChange={selectYear} years={years} className="w-auto" />
           <MonthSelect value={mois} onChange={selectMonth} className="w-auto" highlight={archivedMonths} />
           {isArchived && <span className="badge bg-info-subtle text-info-emphasis border border-info-subtle"><i className="bi bi-archive me-1" />Déjà archivé</span>}
           <SearchBar value={search} onChange={setSearch} />
@@ -126,13 +145,13 @@ export default function Payslips() {
 
       {archived && (
         <div className="alert alert-success py-2 no-print">
-          <i className="bi bi-check-circle me-1" /> Le mois de {mois} a été archivé dans le Suivi mensuel.
+          <i className="bi bi-check-circle me-1" /> {formatPeriod(mois, annee)} a été archivé dans le Suivi mensuel.
         </div>
       )}
 
       <div className="sp-card p-3">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h6 className="fw-bold mb-0">Fiche salariale — {mois}</h6>
+          <h6 className="fw-bold mb-0">Fiche salariale — {formatPeriod(mois, annee)}</h6>
           <span className="text-muted small">Heures théoriques : {formatHours(heuresTheoriques(mois, settings))}</span>
         </div>
         <div className="table-responsive">
@@ -189,7 +208,7 @@ export default function Payslips() {
               <Modal.Title className="fs-6 fw-bold">Fiche salariale individuelle</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <PayslipDetail data={selected} mois={mois} settings={settings} />
+              <PayslipDetail data={selected} mois={mois} annee={annee} settings={settings} />
             </Modal.Body>
             <Modal.Footer className="no-print">
               <Button variant="light" onClick={() => setSelected(null)}>Fermer</Button>
@@ -201,11 +220,11 @@ export default function Payslips() {
 
       <Modal show={confirmArchive} onHide={() => setConfirmArchive(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title className="fs-6 fw-bold">Archiver {mois}</Modal.Title>
+          <Modal.Title className="fs-6 fw-bold">Archiver {formatPeriod(mois, annee)}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Cette action enregistre un instantané de la fiche salariale de <strong>{mois}</strong> dans le Suivi mensuel
-          {isArchived ? ' et remplace l\'archive existante pour ce mois.' : '.'} Les indicateurs du tableau de bord se basent uniquement sur les mois archivés.
+          Cette action enregistre un instantané de la fiche salariale de <strong>{formatPeriod(mois, annee)}</strong> dans le Suivi mensuel
+          {isArchived ? ' et remplace l\'archive existante pour cette période.' : '.'} Les indicateurs du tableau de bord se basent uniquement sur les mois archivés.
         </Modal.Body>
         <Modal.Footer>
           <Button variant="light" onClick={() => setConfirmArchive(false)}>Annuler</Button>
@@ -217,14 +236,14 @@ export default function Payslips() {
 }
 
 /** Mise en page imprimable d'une fiche individuelle. */
-function PayslipDetail({ data, mois, settings }) {
+function PayslipDetail({ data, mois, annee, settings }) {
   const { employee, hours, payslip } = data;
   return (
     <div className="print-payslip p-4 border rounded-3">
       <div className="d-flex justify-content-between align-items-start mb-4">
         <div>
           <h4 className="fw-bold mb-0">SafePay</h4>
-          <div className="text-muted small">Fiche de paie — {mois}</div>
+          <div className="text-muted small">Fiche de paie — {formatPeriod(mois, annee)}</div>
         </div>
         <div className="text-end">
           <div className="fw-bold">{employee.nom} {employee.prenom}</div>

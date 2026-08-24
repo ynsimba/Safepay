@@ -13,7 +13,7 @@ class Setting extends Model
 
     protected $keyType = 'int';
 
-    protected $fillable = ['id', 'threshold', 'perceptions', 'month_hours', 'current_month'];
+    protected $fillable = ['id', 'threshold', 'perceptions', 'month_hours', 'current_month', 'current_year'];
 
     protected function casts(): array
     {

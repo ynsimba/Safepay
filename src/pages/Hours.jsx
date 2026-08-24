@@ -1,11 +1,12 @@
 /**
  * Encodage mensuel des heures prestées et du bonus horaire, par employé.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useData } from '../context/DataContext.jsx';
-import { heuresTheoriques, formatHours } from '../utils/payroll';
+import { heuresTheoriques, formatHours, availableYears, formatPeriod } from '../utils/payroll';
 import { nextSort, sortRows } from '../utils/tableSort.js';
 import MonthSelect from '../components/MonthSelect.jsx';
+import YearSelect from '../components/YearSelect.jsx';
 import { DeltaBadge } from '../components/Badges.jsx';
 import SortTh from '../components/SortTh.jsx';
 import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
@@ -36,15 +37,30 @@ function hoursSortValue(row, key) {
 }
 
 export default function Hours() {
-  const { employees, hoursByMonth, setHours, currentMonth, setCurrentMonth, settings, archivedMonths } = useData();
+  const { employees, hoursByMonth, setHours, currentMonth, currentYear, setCurrentMonth, settings, archivedMonths, archive } = useData();
   const [mois, setMois] = useState(currentMonth);
+  const [annee, setAnnee] = useState(currentYear);
+  const [periodTouched, setPeriodTouched] = useState(false);
   const [sort, setSort] = useState({ key: 'employe', dir: 'asc' });
   const [search, setSearch] = useState('');
+  const years = useMemo(() => availableYears(archive, currentYear), [archive, currentYear]);
+
+  useEffect(() => {
+    if (periodTouched) return;
+    setMois(currentMonth);
+    setAnnee(currentYear);
+  }, [currentMonth, currentYear, periodTouched]);
 
   function selectMonth(m) {
+    setPeriodTouched(true);
     setMois(m);
-    // Persiste le mois choisi pour les autres écrans (fiche, tableau de bord).
-    setCurrentMonth(m);
+    setCurrentMonth(m, annee);
+  }
+
+  function selectYear(y) {
+    setPeriodTouched(true);
+    setAnnee(y);
+    setCurrentMonth(mois, y);
   }
 
   const theo = heuresTheoriques(mois, settings);
@@ -80,7 +96,8 @@ export default function Hours() {
     <div className="d-flex flex-column gap-3">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div className="d-flex align-items-center gap-2 flex-wrap">
-          <span className="text-muted small">Mois d'encodage :</span>
+          <span className="text-muted small">Période :</span>
+          <YearSelect value={annee} onChange={selectYear} years={years} className="w-auto" />
           <MonthSelect value={mois} onChange={selectMonth} className="w-auto" highlight={archivedMonths} />
           <span className="badge bg-light text-dark border">Heures théoriques : {formatHours(theo)}</span>
           <SearchBar value={search} onChange={setSearch} />
@@ -94,7 +111,7 @@ export default function Hours() {
 
       <div className="sp-card p-3">
         <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-          <h6 className="fw-bold mb-0">Heures théorique vs prestées — {mois}</h6>
+          <h6 className="fw-bold mb-0">Heures théorique vs prestées — {formatPeriod(mois, annee)}</h6>
           <span className="text-muted small">
             {totals.count} employé(s) pointé(s) · Total prestées {formatHours(totals.presteesSum)} / {formatHours(totals.theoSum)}
           </span>

@@ -1,14 +1,15 @@
 /**
  * Tableau de bord : KPI du mois archivé, évolution annuelle, détail par employé.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, ComposedChart, Bar, Line,
 } from 'recharts';
 import { useData } from '../context/DataContext.jsx';
-import { MOIS, heuresTheoriques, formatCurrency, computePayslip, salaireForMonth } from '../utils/payroll';
+import { MOIS, heuresTheoriques, formatCurrency, computePayslip, salaireForMonth, availableYears, formatPeriod, archiveYear, latestArchivedPeriod } from '../utils/payroll';
 import MonthSelect from '../components/MonthSelect.jsx';
+import YearSelect from '../components/YearSelect.jsx';
 import { DeltaBadge } from '../components/Badges.jsx';
 import SortTh from '../components/SortTh.jsx';
 import { nextSort, sortRows } from '../utils/tableSort.js';
@@ -103,13 +104,87 @@ function Kpi({ icon, tone, label, value, sub, col = 'col-12 col-sm-6 col-xl-4' }
 }
 
 export default function Dashboard() {
-  const { employees, archive, hoursByMonth, settings, currentMonth, archivedMonths } = useData();
+  const { employees, archive, hoursByMonth, settings, currentMonth, currentYear } = useData();
   const [mois, setMois] = useState(currentMonth);
+  const [annee, setAnnee] = useState(currentYear);
+  const [periodTouched, setPeriodTouched] = useState(false);
   const [empSort, setEmpSort] = useState({ key: 'delta', dir: 'asc' });
   const [search, setSearch] = useState('');
+  const years = useMemo(() => availableYears(archive, currentYear), [archive, currentYear]);
 
-  // KPI et camembert : uniquement le mois archivé sélectionné.
-  const rows = useMemo(() => archive.filter((a) => a.mois === mois), [archive, mois]);
+  useEffect(() => {
+    if (periodTouched) return;
+    const year = Number(currentYear);
+    const hasSnapshot = archive.some(
+      (a) => a.mois === currentMonth && archiveYear(a) === year
+    );
+    if (hasSnapshot) {
+      setMois(currentMonth);
+      setAnnee(year);
+      return;
+    }
+    const latest = latestArchivedPeriod(archive);
+    if (latest) {
+      setMois(latest.mois);
+      setAnnee(latest.annee);
+      return;
+    }
+    setMois(currentMonth);
+    setAnnee(year);
+  }, [archive, currentMonth, currentYear, periodTouched]);
+
+  function selectMonth(m) {
+    setPeriodTouched(true);
+    setMois(m);
+  }
+
+  function selectYear(y) {
+    setPeriodTouched(true);
+    setAnnee(y);
+  }
+
+  const highlightedMonths = useMemo(() => {
+    const year = Number(annee);
+    const set = new Set(archive.filter((a) => archiveYear(a) === year).map((a) => a.mois));
+    return MOIS.filter((m) => set.has(m));
+  }, [archive, annee]);
+
+  // KPI : instantané archivé, sinon heures encodées du mois.
+  const archivedRows = useMemo(
+    () => archive.filter((a) => a.mois === mois && archiveYear(a) === Number(annee)),
+    [archive, mois, annee]
+  );
+
+  const liveRows = useMemo(() => {
+    const byEmp = hoursByMonth[mois] || {};
+    return employees
+      .map((emp) => {
+        const hours = byEmp[emp.id] || { heuresPrestees: '', bonusHoraire: 0 };
+        if (!hasEncodedHours(hours)) return null;
+        const payslip = computePayslip({
+          salaireInitial: salaireForMonth(emp, mois),
+          heuresPrestees: hours.heuresPrestees,
+          bonusHoraire: hours.bonusHoraire,
+          mois,
+          settings,
+        });
+        return {
+          nom: emp.nom,
+          prenom: emp.prenom,
+          perception: emp.perception,
+          delta: payslip.delta,
+          retenue: payslip.retenue,
+          salairePlusBonus: payslip.salairePlusBonus,
+          montantBonus: payslip.montantBonus,
+        };
+      })
+      .filter(Boolean);
+  }, [employees, hoursByMonth, mois, settings]);
+
+  const rows = archivedRows.length
+    ? archivedRows
+    : (Number(annee) === Number(currentYear) ? liveRows : []);
+  const isArchived = archivedRows.length > 0;
 
   const kpis = useMemo(() => {
     const masseSalariale = rows.reduce((s, r) => s + (r.salairePlusBonus || 0), 0);
@@ -123,6 +198,7 @@ export default function Dashboard() {
   }, [rows]);
 
   const tauxRealisation = useMemo(() => {
+    if (Number(annee) !== Number(currentYear)) return null;
     const byEmp = hoursByMonth[mois] || {};
     let presteesSum = 0;
     let theoSum = 0;
@@ -134,14 +210,18 @@ export default function Dashboard() {
       }
     });
     return theoSum ? presteesSum / theoSum : null;
-  }, [hoursByMonth, mois, employees, settings]);
+  }, [hoursByMonth, mois, employees, settings, annee, currentYear]);
 
   const evolution = useMemo(() => {
     return MOIS.map((m) => {
-      const archivedRows = archive.filter((a) => a.mois === m);
+      const monthArchive = archive.filter((a) => a.mois === m && archiveYear(a) === Number(annee));
       // Priorité à l'instantané archivé (chiffres officiels du suivi).
-      if (archivedRows.length > 0) {
-        return { mois: MOIS_COURT[m], moisFull: m, source: 'archive', ...monthTotalsFromArchive(archivedRows) };
+      if (monthArchive.length > 0) {
+        return { mois: MOIS_COURT[m], moisFull: m, source: 'archive', ...monthTotalsFromArchive(monthArchive) };
+      }
+
+      if (Number(annee) !== Number(currentYear)) {
+        return { mois: MOIS_COURT[m], moisFull: m, source: null, masseSalariale: null, bonus: null, retenue: null };
       }
 
       const byEmp = hoursByMonth[m] || {};
@@ -171,7 +251,7 @@ export default function Dashboard() {
       }
       return { mois: MOIS_COURT[m], moisFull: m, source: 'live', masseSalariale, bonus, retenue };
     });
-  }, [archive, hoursByMonth, employees, settings]);
+  }, [archive, hoursByMonth, employees, settings, annee, currentYear]);
 
   const evolutionHasData = useMemo(
     () => evolution.some((row) => row.masseSalariale != null),
@@ -204,14 +284,13 @@ export default function Dashboard() {
     return Object.entries(groups).map(([name, value]) => ({ name, value }));
   }, [rows]);
 
-  const isArchived = archivedMonths.includes(mois);
-
   return (
     <div className="d-flex flex-column gap-4">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div className="d-flex align-items-center gap-2">
-          <span className="text-muted small">Mois sélectionné (KPI et graphiques par employé) :</span>
-          <MonthSelect value={mois} onChange={setMois} className="w-auto" highlight={archivedMonths} />
+          <span className="text-muted small">Période (KPI et graphiques par employé) :</span>
+          <YearSelect value={annee} onChange={selectYear} years={years} className="w-auto" />
+          <MonthSelect value={mois} onChange={selectMonth} className="w-auto" highlight={highlightedMonths} />
         </div>
         {!isArchived && (
           <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2">
@@ -253,7 +332,7 @@ export default function Dashboard() {
           tone="indigo"
           label="Taux de réalisation du temps de travail"
           value={tauxRealisation !== null ? `${(tauxRealisation * 100).toFixed(1)}%` : '—'}
-          sub={`Heures prestées / heures théoriques (${mois})`}
+          sub={`Heures prestées / heures théoriques (${formatPeriod(mois, annee)})`}
         />
         <Kpi
           icon="bi-arrow-left-right"
@@ -266,7 +345,7 @@ export default function Dashboard() {
 
       <div className="sp-card p-3">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <h6 className="fw-bold mb-0">Évolution mensuelle</h6>
+          <h6 className="fw-bold mb-0">Évolution mensuelle ({annee})</h6>
           <div className="sp-chart-legend">
             {EVOLUTION_SERIES.map((s) => (
               <span key={s.key} className="sp-chart-legend-item">
@@ -355,7 +434,7 @@ export default function Dashboard() {
         <div className="col-12 col-lg-7">
           <div className="sp-card p-3 h-100">
             <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-              <h6 className="fw-bold mb-0">Par employé ({mois}) — delta d'heures</h6>
+              <h6 className="fw-bold mb-0">Par employé ({formatPeriod(mois, annee)}) — delta d'heures</h6>
               <SearchBar value={search} onChange={setSearch} />
             </div>
             <div className="table-responsive" style={{ maxHeight: 340, overflowY: 'auto' }}>
@@ -389,7 +468,7 @@ export default function Dashboard() {
         </div>
         <div className="col-12 col-lg-5">
           <div className="sp-card p-3 h-100">
-            <h6 className="fw-bold mb-3">Moyen de perception ({mois})</h6>
+            <h6 className="fw-bold mb-3">Moyen de perception ({formatPeriod(mois, annee)})</h6>
             <div className="sp-chart-frame sp-chart-frame-sm">
               {parPerception.length === 0 ? (
                 <div className="sp-chart-empty">Aucune donnée pour ce mois</div>

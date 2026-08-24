@@ -16,7 +16,7 @@ class Archive extends Model
     protected $table = 'archives';
 
     protected $fillable = [
-        'id', 'mois', 'employee_id', 'nom', 'prenom', 'perception',
+        'id', 'mois', 'annee', 'employee_id', 'nom', 'prenom', 'perception',
         'heures_prestees', 'heures_theoriques', 'delta', 'salaire',
         'montant_bonus', 'salaire_plus_bonus', 'retenue', 'en_retard', 'archived_at',
     ];
@@ -33,6 +33,7 @@ class Archive extends Model
             'retenue' => 'float',
             'en_retard' => 'boolean',
             'archived_at' => 'datetime',
+            'annee' => 'integer',
         ];
     }
 
@@ -41,6 +42,7 @@ class Archive extends Model
         return [
             'id' => $this->id,
             'mois' => $this->mois,
+            'annee' => (int) $this->annee,
             'employeeId' => $this->employee_id,
             'nom' => $this->nom,
             'prenom' => $this->prenom,

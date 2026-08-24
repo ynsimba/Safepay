@@ -10,6 +10,7 @@ import { PerceptionBadge } from '../components/Badges.jsx';
 import MonthSelect from '../components/MonthSelect.jsx';
 import SortTh from '../components/SortTh.jsx';
 import SearchBar, { matchesSearch } from '../components/SearchBar.jsx';
+import { api } from '../api';
 
 const EMPTY_FORM = { nom: '', prenom: '', perception: 'VB', salaireInitial: '', compteBancaire: '', salaireFromMois: '' };
 
@@ -55,7 +56,7 @@ export default function Employees() {
     const q = search.trim().toLowerCase();
     if (!q) return employees;
     return employees.filter((e) =>
-      matchesSearch(`${e.nom} ${e.prenom} ${e.perception} ${e.compteBancaire || ''}`, q)
+      matchesSearch(`${e.nom} ${e.prenom} ${e.perception}`, q)
     );
   }, [employees, search]);
 
@@ -76,7 +77,7 @@ export default function Employees() {
     setShowModal(true);
   }
 
-  function openEdit(emp) {
+  async function openEdit(emp) {
     setEditingId(emp.id);
     setOriginalSalaire(emp.salaireInitial);
     setForm({
@@ -84,11 +85,17 @@ export default function Employees() {
       prenom: emp.prenom,
       perception: emp.perception,
       salaireInitial: emp.salaireInitial,
-      compteBancaire: emp.compteBancaire || '',
+      compteBancaire: '',
       salaireFromMois: '',
     });
     setErrors({});
     setShowModal(true);
+    try {
+      const full = await api.getEmployee(emp.id);
+      setForm((current) => ({ ...current, compteBancaire: full.compteBancaire || '' }));
+    } catch {
+      /* Le masque de la liste ne doit pas être renvoyé comme IBAN. */
+    }
   }
 
   function validate() {
