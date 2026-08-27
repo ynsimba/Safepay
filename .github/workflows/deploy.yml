@@ -1,0 +1,23 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  deploy:
+    name: VPS pay.safecheckrdc.com
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.head_branch == 'main'
+      && github.event.workflow_run.event == 'push'
+    steps:
+      - name: Déployer via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: 191.215.38.33
+          username: safecheck
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: bash /var/www/safepay/deploy/update.sh
