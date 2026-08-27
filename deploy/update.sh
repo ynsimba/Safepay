@@ -37,8 +37,10 @@ echo "==> frontend"
 cd "$APP_ROOT"
 npm ci
 npm run build
-chmod -R g+rX dist
+chmod 755 "$APP_ROOT"
+chmod -R a+rX dist
 chmod -R ug+rwX backend/storage backend/bootstrap/cache
+chmod 640 "${APP_ROOT}/backend/.env" 2>/dev/null || true
 
 if sudo -n /bin/systemctl reload php8.4-fpm >/dev/null 2>&1; then
   echo "==> php-fpm rechargé"
