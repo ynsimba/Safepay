@@ -14,6 +14,7 @@ import Hours from './pages/Hours.jsx';
 import Payslips from './pages/Payslips.jsx';
 import Archive from './pages/Archive.jsx';
 import Settings from './pages/Settings.jsx';
+import Users from './pages/Users.jsx';
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -58,6 +59,7 @@ function AuthenticatedApp() {
               <Route path="/fiche-salariale" element={<Payslips />} />
               <Route path="/archive" element={<Archive />} />
               <Route path="/parametres" element={<Settings />} />
+              <Route path="/utilisateurs" element={<Users />} />
             </Route>
           </Routes>
         </HashRouter>

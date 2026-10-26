@@ -18,6 +18,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
 
         $email = strtolower(trim($data['email']));
@@ -45,7 +46,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $this->publicUser($user),
-        ])->withCookie(AuthCookie::make($token, $request));
+        ])->withCookie(AuthCookie::make($token, $request, $request->boolean('remember', true)));
     }
 
     public function logout(Request $request): JsonResponse

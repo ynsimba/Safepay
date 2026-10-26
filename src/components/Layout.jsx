@@ -45,6 +45,7 @@ const NAV_ITEMS = [
   { section: 'Configuration', items: [
     { to: '/employes', label: 'Employés', icon: 'bi-people' },
     { to: '/parametres', label: 'Paramètres', icon: 'bi-sliders' },
+    { to: '/utilisateurs', label: 'Utilisateurs', icon: 'bi-person-gear' },
   ]},
 ];
 
@@ -56,6 +57,7 @@ const PAGE_META = {
   '/archive': { title: 'Suivi mensuel', sub: 'Historique archivé de tous les mois traités' },
   '/employes': { title: 'Employés', sub: 'Gestion de l\'effectif et des informations bancaires' },
   '/parametres': { title: 'Paramètres', sub: 'Règles de calcul, journal d\'activité et zone de danger' },
+  '/utilisateurs': { title: 'Utilisateurs', sub: 'Création des comptes et gestion des mots de passe' },
 };
 
 export default function Layout() {

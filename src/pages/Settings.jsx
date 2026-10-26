@@ -21,6 +21,8 @@ const AUDIT_LABELS = {
   'archive.create': 'Mois archivé',
   'archive.delete': 'Archive supprimée',
   'payroll.reset': 'Réinitialisation des données',
+  'user.create': 'Utilisateur créé',
+  'user.password': 'Mot de passe modifié',
 };
 
 function formatAuditWhen(iso) {
@@ -37,6 +39,7 @@ function auditDetail(entry) {
     return `${meta.mois} ${meta.annee || ''}`.trim();
   }
   if (entry.action === 'employee.delete' && meta.nom) return meta.nom;
+  if (entry.action.startsWith('user.') && meta.email) return meta.email;
   if (entry.action === 'employee.create' && (meta.nom || meta.prenom)) {
     return `${meta.nom || ''} ${meta.prenom || ''}`.trim();
   }

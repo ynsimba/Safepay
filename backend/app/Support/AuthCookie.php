@@ -15,12 +15,13 @@ final class AuthCookie
         return max(1, (int) config('sanctum.expiration', 480));
     }
 
-    public static function make(string $plainTextToken, Request $request): Cookie
+    /** Sans « se souvenir de moi », cookie de session : effacé à la fermeture du navigateur. */
+    public static function make(string $plainTextToken, Request $request, bool $remember = true): Cookie
     {
         return cookie(
             self::NAME,
             $plainTextToken,
-            self::minutes(),
+            $remember ? self::minutes() : 0,
             '/',
             null,
             $request->secure() || app()->environment('production'),

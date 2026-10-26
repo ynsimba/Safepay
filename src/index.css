@@ -925,47 +925,460 @@ body {
 
 /* ---------- Connexion Sanctum ---------- */
 .sp-login {
-  min-height: 100vh;
+  --login-navy: #13284f;
+  --login-navy-2: #1b3463;
+  --login-ink: #0f1b33;
+  --login-text: #334155;
+  --login-muted: #64748b;
+  --login-placeholder: #94a3b8;
+  --login-border: #d9e0ea;
+  --login-field: #f8fafc;
+  --login-lime: #aafa03;
+  --login-focus: #3157a4;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--sp-lime) 8%, white) 0%,
-    color-mix(in srgb, var(--sp-lime) 14%, white) 50%,
-    color-mix(in srgb, var(--sp-lime) 6%, white) 100%
-  );
+  padding: 32px 16px;
+  font-family: 'Plus Jakarta Sans', var(--sp-font);
+  background: #eef2f7;
+  -webkit-font-smoothing: antialiased;
 }
 
 .sp-login-card {
-  width: min(420px, 100%);
+  display: grid;
+  grid-template-columns: 1.08fr 1fr;
+  width: min(1120px, 100%);
+  min-height: 660px;
   background: #fff;
-  border: 1px solid var(--sp-border);
-  padding: 2rem 1.75rem 1.75rem;
-  box-shadow: 0 16px 40px rgb(16 26 52 / 0.08);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+/* Panneau marque (gauche) : un vrai fragment de l'interface SafePay */
+.sp-login-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 52px 0 32px 52px;
+  background: var(--login-navy);
+  color: #fff;
+}
+
+.sp-login-hero-copy {
+  padding-right: 52px;
+  max-width: 470px;
+}
+
+.sp-login-headline {
+  margin: 0 0 14px;
+  font-family: inherit;
+  font-size: 34px;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.sp-login-lead {
+  margin: 0;
+  max-width: 420px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.74);
+  text-wrap: pretty;
+}
+
+/* Fragment d'interface : déborde à droite, comme une capture recadrée. */
+.sp-preview {
+  margin: 40px -1px 0 0;
+  width: calc(100% + 72px);
+  background: #fff;
+  color: var(--login-ink);
+  border-radius: 14px 0 0 14px;
+  box-shadow: 0 30px 60px -20px rgb(3 10 26 / 0.55), 0 0 0 1px rgb(255 255 255 / 0.08); /* taste-skill-ignore : fragment d'interface data-ui */
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  animation: sp-preview-in 600ms var(--ease-out) 100ms both;
+}
+
+.sp-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #edf1f6; /* taste-skill-ignore : en-tête du fragment data-ui */
+}
+
+.sp-preview-bar strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sp-preview-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 72px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--login-text);
+}
+
+.sp-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sp-preview-table th {
+  padding: 10px 20px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--login-muted);
+}
+
+.sp-preview-table td {
+  padding: 11px 20px;
+  border-top: 1px solid #f0f3f8;
+  color: var(--login-text);
+  white-space: nowrap;
+}
+
+.sp-preview-table td:first-child {
+  font-weight: 600;
+  color: var(--login-ink);
+}
+
+.sp-preview-table th:last-child,
+.sp-preview-table td:last-child {
+  padding-right: 92px;
+  text-align: right;
+}
+
+.sp-preview-table tbody td:last-child {
+  font-weight: 600;
+  color: var(--login-ink);
+}
+
+.sp-preview-table td.is-short {
+  color: #c2410c;
+}
+
+.sp-preview-table tbody tr {
+  animation: sp-preview-row 360ms var(--ease-out) both;
+  animation-delay: calc(320ms + var(--i, 0) * 60ms);
+}
+
+.sp-preview-table tfoot td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  background: #f8fafc;
+  border-top: 1px solid #e6ebf2;
+  font-weight: 700;
+  color: var(--login-ink);
+}
+
+.sp-preview-table tfoot td:last-child {
+  font-size: 15px;
+}
+
+.sp-preview-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.sp-preview-badge.is-vb {
+  background: #e8eefb;
+  color: #2a4a8f;
+}
+
+.sp-preview-badge.is-cash {
+  background: #effcd6;
+  color: #3f6212;
+}
+
+.sp-login-trust {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: auto 52px 0 0;
+  padding-top: 28px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.sp-login-trust i {
+  flex: none;
+  font-size: 16px;
+  color: var(--login-lime);
+}
+
+@keyframes sp-preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes sp-preview-row {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-preview,
+  .sp-preview-table tbody tr {
+    animation: none;
+  }
+}
+
+/* Formulaire (droite) */
+.sp-login .alert {
+  font-family: inherit;
+  border-radius: 10px;
+}
+
+.sp-login-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 60px;
+}
+
+.sp-login-brand {
+  margin-bottom: 36px;
 }
 
 .sp-login-logo {
   display: block;
-  height: 48px;
-  width: auto;
-  max-width: min(148px, 55%);
-  object-fit: contain;
-  object-position: center;
-  margin: 0 auto 1.25rem;
+  width: 168px;
+  height: auto;
+  margin: 0 0 28px -6px;
 }
 
-.sp-login-title {
-  font-size: 1.35rem;
+.sp-login-form-title {
+  margin: 0 0 6px;
+  font-size: 26px;
   font-weight: 700;
-  text-align: center;
-  margin-bottom: 0.25rem;
+  letter-spacing: -0.02em;
+  color: var(--login-ink);
 }
 
-.sp-login-sub {
-  text-align: center;
-  color: var(--sp-text-muted);
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
+.sp-login-form-sub {
+  margin: 0;
+  font-size: 15px;
+  color: var(--login-muted);
+}
+
+.sp-login-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--login-ink);
+}
+
+.sp-login-field {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  margin-bottom: 20px;
+  padding: 0 6px 0 16px;
+  gap: 12px;
+  background: var(--login-field);
+  border: 1px solid var(--login-border); /* taste-skill-ignore : champ de formulaire */
+  border-radius: 12px;
+  transition-property: border-color, box-shadow, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.sp-login-field:hover {
+  border-color: #c3ccd9;
+}
+
+.sp-login-field:focus-within {
+  background: #fff;
+  border-color: var(--login-focus);
+  box-shadow: 0 0 0 4px rgb(49 87 164 / 0.14); /* taste-skill-ignore : anneau de focus */
+}
+
+.sp-login-field > i {
+  color: var(--login-placeholder);
+  font-size: 17px;
+}
+
+.sp-login-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  color: var(--login-ink);
+}
+
+.sp-login-field input::placeholder {
+  color: var(--login-placeholder);
+}
+
+.sp-login-eye {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--login-muted);
+  font-size: 17px;
+  cursor: pointer;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.sp-login-eye:hover {
+  background: #eef2f7;
+  color: var(--login-ink);
+}
+
+.sp-login-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -2px 0 24px;
+}
+
+.sp-login-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--login-text);
+  cursor: pointer;
+}
+
+.sp-login-remember input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--login-navy);
+  cursor: pointer;
+}
+
+.sp-login-forgot {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--login-focus);
+  cursor: pointer;
+}
+
+.sp-login-forgot:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sp-login-forgot-note {
+  margin: -10px 0 20px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eef3fc;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #28427a;
+}
+
+.sp-login-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 50px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--login-navy);
+  color: #fff;
+  font: inherit;
+  font-size: 15.5px;
+  font-weight: 700;
+  transition-property: background-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.sp-login-submit:hover:not(:disabled) {
+  background: var(--login-navy-2);
+}
+
+.sp-login-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.sp-login-submit:focus-visible,
+.sp-login-forgot:focus-visible,
+.sp-login-eye:focus-visible,
+.sp-login-back:focus-visible {
+  outline: 2px solid var(--login-focus);
+  outline-offset: 2px;
+}
+
+.sp-login-submit:disabled {
+  opacity: 0.7;
+}
+
+.sp-login-back {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--login-muted);
+  text-decoration: none;
+  transition: color 150ms ease-out;
+}
+
+.sp-login-back:hover {
+  color: var(--login-ink);
+}
+
+@media (max-width: 960px) {
+  .sp-login-card {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    max-width: 480px;
+  }
+
+  .sp-login-hero {
+    display: none;
+  }
+
+  .sp-login-form {
+    padding: 40px 24px;
+  }
 }

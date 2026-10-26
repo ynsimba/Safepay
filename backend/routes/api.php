@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -22,6 +23,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/archive', [PayrollController::class, 'archive']);
         Route::delete('/archive/{annee}/{mois}', [PayrollController::class, 'destroyArchive']);
         Route::get('/audit', [PayrollController::class, 'audit']);
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}/password', [UserController::class, 'updatePassword'])->whereNumber('id');
         Route::post('/reset', [PayrollController::class, 'reset'])->middleware('throttle:3,10');
     });
 });

@@ -33,10 +33,10 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  login: (email, password) => request('/login', {
+  login: (email, password, remember = true) => request('/login', {
     method: 'POST',
     skipAuth: true,
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, remember }),
   }),
   logout: () => request('/logout', { method: 'POST' }),
   me: () => request('/user'),
@@ -58,4 +58,10 @@ export const api = {
   deleteArchiveMonth: (mois, annee) => request(`/archive/${annee}/${encodeURIComponent(mois)}`, { method: 'DELETE' }),
   resetAllData: (password) => request('/reset', { method: 'POST', body: JSON.stringify({ confirm: 'RESET', password }) }),
   getAudit: () => request('/audit'),
+  getUsers: () => request('/users'),
+  createUser: (body) => request('/users', { method: 'POST', body: JSON.stringify(body) }),
+  setUserPassword: (id, password) => request(`/users/${encodeURIComponent(id)}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ password }),
+  }),
 };

@@ -31,8 +31,8 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('safecheck-auth-lost', onLost);
   }, [clearSession]);
 
-  const login = useCallback(async (email, password) => {
-    const data = await api.login(email, password);
+  const login = useCallback(async (email, password, remember = true) => {
+    const data = await api.login(email, password, remember);
     setUser(data.user);
     return data.user;
   }, []);
